@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="houseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#e11d48" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Rounded Squircle Badge -->
+  <rect width="512" height="512" rx="128" fill="url(#houseGrad)" />
+
+  <!-- Modern House Icon with Heart Door -->
+  <g filter="url(#shadow)">
+    <!-- Roof & Chimney -->
+    <path d="M256 96 L106 226 C98 233 98 245 106 252 L118 263 C125 270 137 270 144 263 L256 166 L368 263 C375 270 387 270 394 263 L406 252 C414 245 414 233 406 226 L256 96 Z" fill="#ffffff" />
+
+    <!-- House Body -->
+    <path d="M144 240 L144 394 C144 407 155 418 168 418 L344 418 C357 418 368 407 368 394 L368 240 L256 142 L144 240 Z" fill="#ffffff" opacity="0.95" />
+
+    <!-- Cute Heart Door Cutout -->
+    <path d="M256 370 C242 355 220 338 220 320 C220 306 230 296 244 296 C252 296 256 300 256 300 C256 300 260 296 268 296 C282 296 292 306 292 320 C292 338 270 355 256 370 Z" fill="#e11d48" />
+  </g>
+</svg>
