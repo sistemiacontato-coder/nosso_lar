@@ -13,7 +13,7 @@ export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v2';
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
   saymonAddress1: 'Miguel Rachid, 205, Osasco - SP',
   saymonAddress2: '',
-  kellyAddress1: 'Prédio da antiga estação ferroviária de Águas da Prata, SP',
+  kellyAddress1: 'Prédio Prata - Bradesco (Cidade de Deus), Osasco - SP',
   kellyAddress2: '',
 };
 

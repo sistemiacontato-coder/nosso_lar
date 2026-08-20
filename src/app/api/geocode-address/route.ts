@@ -15,20 +15,40 @@ export async function GET(req: NextRequest) {
     const suggestions: any[] = [];
     const seenIds = new Set<string>();
 
+    // Special landmark matches for common Osasco/SP queries (e.g. Prédio Prata)
+    const lowerQ = cleanQuery.toLowerCase();
+    if (lowerQ.includes('prata') || lowerQ.includes('bradesco') || lowerQ.includes('cidade de deus')) {
+      const predioPrataKey = 'loc-predio-prata-bradesco';
+      seenIds.add(predioPrataKey);
+      suggestions.push({
+        id: predioPrataKey,
+        displayName: 'Prédio Prata - Bradesco (Cidade de Deus), Osasco - SP, 06029-900, Brasil',
+        shortTitle: 'Prédio Prata - Bradesco (Cidade de Deus, Osasco)',
+        lat: -23.5358,
+        lon: -46.7725,
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     // 1. Primary: Gemini AI Location Resolver (Returns exact Google Maps Landmarks & POIs for Brazil/SP)
     if (apiKey) {
       try {
-        const prompt = `Você é uma API do Google Maps para o Brasil. Dada a busca "${cleanQuery}", retorne no máximo 5 locais reais e precisos do Google Maps (ruas, avenidas, prédios conhecidos, bairros, pontos de interesse em São Paulo, Osasco ou Brasil).
-Responda EXCLUSIVAMENTE em formato JSON VÁLIDO:
+        const prompt = `Você é uma API do Google Maps para a região de Osasco e Grande São Paulo, Brasil. 
+Dada a busca por endereço ou local "${cleanQuery}", retorne no máximo 5 locais reais e precisos do Google Maps (prédios conhecidos de empresas como Bradesco Cidade de Deus, shopping centers, avenidas, ruas e bairros em Osasco / São Paulo / Zona Oeste SP).
+
+IMPORTANTE: 
+- Se a busca for "Prédio Prata" ou similar, o usuário se refere ao Prédio Prata do Bradesco na Cidade de Deus, Osasco - SP.
+- Priorize SEMPRE locais em Osasco e São Paulo Zona Oeste sobre cidades distantes do interior.
+
+Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
 [
   {
     "id": "loc-1",
     "displayName": "Prédio Prata - Bradesco, Cidade de Deus, Osasco - SP, Brasil",
-    "shortTitle": "Prédio Prata (Cidade de Deus, Osasco)",
-    "lat": -23.5321,
-    "lon": -46.7772
+    "shortTitle": "Prédio Prata - Bradesco (Cidade de Deus, Osasco)",
+    "lat": -23.5358,
+    "lon": -46.7725
   }
 ]`;
 
@@ -73,13 +93,13 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO:
       }
     }
 
-    // 2. Secondary: OpenStreetMap Nominatim with São Paulo Bounding Box Bias
+    // 2. Secondary: OpenStreetMap Nominatim with Osasco / São Paulo Bounding Box Bias
     try {
-      const searchQ = cleanQuery.toLowerCase().includes('sp') || cleanQuery.toLowerCase().includes('osasco') || cleanQuery.toLowerCase().includes('são paulo')
+      const searchQ = cleanQuery.toLowerCase().includes('osasco') || cleanQuery.toLowerCase().includes('são paulo')
         ? cleanQuery
-        : `${cleanQuery}, São Paulo, Brasil`;
+        : `${cleanQuery}, Osasco, São Paulo, Brasil`;
 
-      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-47.1,-23.9,-46.2,-23.2&bounded=0`;
+      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-46.85,-23.60,-46.70,-23.50&bounded=0`;
       const nomRes = await fetch(nomUrl, {
         headers: {
           'User-Agent': 'NossoLarApp/1.0 (nosso-lar@sistemia.com.br)',
@@ -95,7 +115,7 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO:
             const road = address.road || address.pedestrian || address.suburb || item.display_name.split(',')[0];
             const houseNumber = address.house_number ? `, ${address.house_number}` : '';
             const suburb = address.suburb || address.neighbourhood || address.city_district || '';
-            const city = address.city || address.town || address.municipality || 'São Paulo';
+            const city = address.city || address.town || address.municipality || 'Osasco';
             const state = address.state || 'SP';
 
             const fullLabel = [road + houseNumber, suburb, city, state].filter(Boolean).join(', ');

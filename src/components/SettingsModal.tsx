@@ -94,9 +94,10 @@ export function saveStoredAIConfig(config: AIConfig) {
 interface SettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClearRatings?: () => void;
 }
 
-export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsModalProps) {
   const [config, setConfig] = useState<AIConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
 
@@ -277,6 +278,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </DialogHeader>
 
         <div className="py-4 space-y-4">
+          {/* Zerar Avaliações & Status */}
+          {onClearRatings && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs">
+              <div>
+                <div className="font-bold text-rose-800 dark:text-rose-300">Zerar Notas & Status</div>
+                <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                  Limpa todas as notas do Saymon e da Kelly e altera o status para "Para Analisar".
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  onClearRatings();
+                  setFeedback('Notas e vereditos zerados com sucesso!');
+                }}
+                className="shrink-0 text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950 border-rose-300 font-bold"
+              >
+                Zerar Notas
+              </Button>
+            </div>
+          )}
+
           {/* Redundancy Switch */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <div className="flex items-center gap-2">

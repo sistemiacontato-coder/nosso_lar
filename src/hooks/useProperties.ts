@@ -9,7 +9,7 @@ import { PropertyFormValues } from '@/lib/schemas';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v7';
+const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v8';
 
 export function useProperties() {
   const [properties, setProperties, isLoaded] = useLocalStorage<Property[]>(
@@ -588,6 +588,23 @@ export function useProperties() {
     };
   }, [nossosImoveis]);
 
+  const clearAllRatingsAndStatus = useCallback(() => {
+    setProperties((prev) =>
+      prev.map((item) => ({
+        ...item,
+        status: 'Para Analisar' as PropertyStatus,
+        notaSaymon: 0,
+        vereditoSaymon: undefined,
+        opiniaoSaymon: undefined,
+        notaKelly: 0,
+        vereditoKelly: undefined,
+        opiniaoKelly: undefined,
+        mediaCasal: 0,
+        notaPessoal: 0,
+      }))
+    );
+  }, [setProperties]);
+
   return {
     properties,
     nossosImoveis,
@@ -617,6 +634,7 @@ export function useProperties() {
     toggleArchiveProperty,
     recalculateCommuteTimes,
     resetToSampleData,
+    clearAllRatingsAndStatus,
     kpis,
   };
 }

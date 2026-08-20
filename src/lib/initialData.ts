@@ -33,25 +33,25 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Sol da Manhã',
       'Aceita Pet',
     ],
-    status: 'Proposta Enviada',
+    status: 'Para Analisar',
 
     // Avaliação Saymon
-    notaSaymon: 5,
-    vereditoSaymon: 'Aprovado',
-    opiniaoSaymon: 'Planta fantástica de 84m² com 2 vagas de garagem demarcadas. Excelente infraestrutura e condomínio clube completo.',
+    notaSaymon: 0,
+    vereditoSaymon: undefined,
+    opiniaoSaymon: undefined,
 
     // Avaliação Kelly
-    notaKelly: 5,
-    vereditoKelly: 'Aprovada',
-    opiniaoKelly: 'Amei a varanda gourmet e a cozinha bem distribuída! Localização ótima perto do shopping e muito segura.',
+    notaKelly: 0,
+    vereditoKelly: undefined,
+    opiniaoKelly: undefined,
 
-    mediaCasal: 5.0,
-    notaPessoal: 5,
+    mediaCasal: 0,
+    notaPessoal: 0,
 
     observacoes: 'Código AP3464-B2MC. Agendar visita presencial para conferir a vista e o sol da manhã.',
     duvidasCorretor: '1. A vaga de garagem é livre ou presa?\n2. O valor do condomínio inclui água/gás?\n3. Aceita seguro fiança?',
     dataCadastro: '2026-08-16T14:00:00.000Z',
-    isFavorito: true,
+    isFavorito: false,
   },
   {
     id: 'prop-vanderleia-78804346',
@@ -82,25 +82,25 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Elevador',
       'Aceita Pet',
     ],
-    status: 'Pendente Avaliação',
+    status: 'Para Analisar',
 
     // Avaliação Saymon
-    notaSaymon: 5,
-    vereditoSaymon: 'Aprovado',
-    opiniaoSaymon: 'Diferencial enorme ter 2 vagas de garagem na Vila Yara com 75m² bem aproveitados. Ref: AP00770 na Vanderleia Imóveis.',
+    notaSaymon: 0,
+    vereditoSaymon: undefined,
+    opiniaoSaymon: undefined,
 
     // Avaliação Kelly
-    notaKelly: 5,
-    vereditoKelly: 'Aprovada',
-    opiniaoKelly: 'Adorei a localização na Vila Yara! Condomínio e IPTU dentro do planejado e ótima distribuição.',
+    notaKelly: 0,
+    vereditoKelly: undefined,
+    opiniaoKelly: undefined,
 
-    mediaCasal: 5.0,
-    notaPessoal: 5,
+    mediaCasal: 0,
+    notaPessoal: 0,
 
     observacoes: 'Código AP00770 - Vanderleia Imóveis (Tel/Whats: 11 99487-8624). Total mensal R$ 4.849.',
     duvidasCorretor: '1. As duas vagas são cobertas e demarcadas?\n2. Tem ar-condicionado na suíte?\n3. O andar é alto?',
     dataCadastro: '2026-08-17T14:30:00.000Z',
-    isFavorito: true,
+    isFavorito: false,
   },
   {
     id: 'prop-osasco-3527',
@@ -131,25 +131,25 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Vista Livre',
       'Andar Alto',
     ],
-    status: 'Visita Agendada',
+    status: 'Para Analisar',
 
     // Avaliação Saymon
-    notaSaymon: 5,
-    vereditoSaymon: 'Aprovado',
-    opiniaoSaymon: 'Excelente metragem de 90m² e pacote total por R$ 3.988/mês na Rua Moema (apenas R$ 44/m²!).',
+    notaSaymon: 0,
+    vereditoSaymon: undefined,
+    opiniaoSaymon: undefined,
 
     // Avaliação Kelly
-    notaKelly: 5,
-    vereditoKelly: 'Aprovada',
-    opiniaoKelly: 'Apartamento super amplo com 90m² e condomínio muito bem estruturado!',
+    notaKelly: 0,
+    vereditoKelly: undefined,
+    opiniaoKelly: undefined,
 
-    mediaCasal: 5.0,
-    notaPessoal: 5.0,
+    mediaCasal: 0,
+    notaPessoal: 0,
 
     observacoes: 'Código AP3527-B2MC. Pacote fechado divulgado por R$ 3.988,00/mês.',
     duvidasCorretor: '1. O apartamento pega o sol da manhã?\n2. As chaves já estão na imobiliária?',
     dataCadastro: '2026-08-16T15:30:00.000Z',
-    isFavorito: true,
+    isFavorito: false,
   },
   {
     id: 'prop-vilasaofrancisco-viva',
@@ -183,17 +183,17 @@ export const INITIAL_PROPERTIES: Property[] = [
     status: 'Para Analisar',
 
     // Avaliação Saymon
-    notaSaymon: 4,
-    vereditoSaymon: 'Gostei',
-    opiniaoSaymon: 'Ótima logística na Vila São Francisco, perto de comércio e fácil saída para as Marginais. Apenas 1 vaga de garagem.',
+    notaSaymon: 0,
+    vereditoSaymon: undefined,
+    opiniaoSaymon: undefined,
 
     // Avaliação Kelly
-    notaKelly: 5,
-    vereditoKelly: 'Aprovada',
-    opiniaoKelly: 'Bairro super arborizado, rua tranquila e segura. O apartamento é claro e ventilado.',
+    notaKelly: 0,
+    vereditoKelly: undefined,
+    opiniaoKelly: undefined,
 
-    mediaCasal: 4.5,
-    notaPessoal: 4.5,
+    mediaCasal: 0,
+    notaPessoal: 0,
 
     observacoes: 'VivaReal ID 2904724653. Checar se a vaga de garagem é livre ou presa.',
     duvidasCorretor: '1. A vaga de garagem é livre ou trancada?\n2. Aceita pet de médio porte?',
@@ -232,17 +232,17 @@ export const INITIAL_PROPERTIES: Property[] = [
     status: 'Para Analisar',
 
     // Avaliação Saymon
-    notaSaymon: 4,
-    vereditoSaymon: 'Gostei',
-    opiniaoSaymon: 'Vila Yara é uma das melhores regiões de Osasco, pertinho do Bradesco Cidade de Deus e Shopping União.',
+    notaSaymon: 0,
+    vereditoSaymon: undefined,
+    opiniaoSaymon: undefined,
 
     // Avaliação Kelly
-    notaKelly: 4,
-    vereditoKelly: 'Gostei',
-    opiniaoKelly: 'Apartamento com planta aconchegante de 75m² e condomínio organizado. Gostei bastante da cozinha.',
+    notaKelly: 0,
+    vereditoKelly: undefined,
+    opiniaoKelly: undefined,
 
-    mediaCasal: 4.0,
-    notaPessoal: 4.0,
+    mediaCasal: 0,
+    notaPessoal: 0,
 
     observacoes: 'VivaReal ID 2903669398. Comparar com o de 84m² da Vila Yara que tem 2 vagas de garagem.',
     duvidasCorretor: '1. O apartamento possui armários em todos os 3 quartos?\n2. O condomínio tem gerador para o elevador?',

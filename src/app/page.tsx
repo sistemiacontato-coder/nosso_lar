@@ -51,6 +51,7 @@ function DashboardContent() {
     toggleArchiveProperty,
     recalculateCommuteTimes,
     resetToSampleData,
+    clearAllRatingsAndStatus,
     kpis,
   } = useProperties();
 
@@ -362,7 +363,11 @@ function DashboardContent() {
       <LoginModal />
 
       {/* Settings Modal */}
-      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+      <SettingsModal
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        onClearRatings={clearAllRatingsAndStatus}
+      />
 
       {/* Realtor Modal */}
       <RealtorModal

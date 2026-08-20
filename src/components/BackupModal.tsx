@@ -20,6 +20,7 @@ interface BackupModalProps {
   onExport: () => void;
   onImport: (jsonData: string) => { success: boolean; count?: number; error?: string };
   onResetToDefault: () => void;
+  onClearRatings?: () => void;
 }
 
 export function BackupModal({
@@ -29,6 +30,7 @@ export function BackupModal({
   onExport,
   onImport,
   onResetToDefault,
+  onClearRatings,
 }: BackupModalProps) {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
@@ -153,6 +155,35 @@ export function BackupModal({
             Selecionar
           </Button>
         </div>
+
+        {/* Zerar Avaliações & Status */}
+        {onClearRatings && (
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <RotateCcw className="h-4 w-4 text-rose-500" />
+                Zerar Notas, Vereditos & Status
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Limpa as notas e opiniões do Saymon/Kelly e define status como "Para Analisar".
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                onClearRatings();
+                setFeedback({
+                  type: 'success',
+                  message: 'Avaliações zeradas e status alterados para Para Analisar!',
+                });
+              }}
+              className="shrink-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+            >
+              Zerar Notas
+            </Button>
+          </div>
+        )}
 
         {/* Reset to Samples */}
         <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
