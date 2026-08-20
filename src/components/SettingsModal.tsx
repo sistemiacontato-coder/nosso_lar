@@ -2,26 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Settings,
-  Sparkles,
+  Cpu,
   Key,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  ShieldCheck,
-  Cpu,
-  RefreshCw,
   Zap,
-  Globe,
   ArrowLeftRight,
-  Layers,
+  ShieldCheck,
 } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v4';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v5';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
@@ -41,21 +36,21 @@ export interface AIConfig {
 
 export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> = {
   gemini: [
-    { id: 'gemini-1.5-flash', name: 'Google Gemini 1.5 Flash (Super Rápido & Recomendado)' },
-    { id: 'gemini-1.5-pro', name: 'Google Gemini 1.5 Pro (Raciocínio Profundo)' },
-    { id: 'gemini-2.0-flash-exp', name: 'Google Gemini 2.0 Flash (Experimental Ultra-Fast)' },
+    { id: 'gemini-1.5-flash', name: 'Google Gemini 1.5 Flash' },
+    { id: 'gemini-1.5-pro', name: 'Google Gemini 1.5 Pro' },
+    { id: 'gemini-2.0-flash-exp', name: 'Google Gemini 2.0 Flash' },
   ],
   openai: [
-    { id: 'gpt-4o-mini', name: 'OpenAI GPT-4o Mini (Rápido e Inteligente)' },
-    { id: 'gpt-4o', name: 'OpenAI GPT-4o (Visão e Precisão Máxima)' },
+    { id: 'gpt-4o-mini', name: 'OpenAI GPT-4o Mini' },
+    { id: 'gpt-4o', name: 'OpenAI GPT-4o' },
     { id: 'gpt-3.5-turbo', name: 'OpenAI GPT-3.5 Turbo' },
   ],
   groq: [
-    { id: 'llama-3.3-70b-versatile', name: 'Groq Llama 3.3 70B (Velocidade Extrema)' },
+    { id: 'llama-3.3-70b-versatile', name: 'Groq Llama 3.3 70B' },
     { id: 'mixtral-8x7b-32768', name: 'Groq Mixtral 8x7B' },
   ],
   custom: [
-    { id: 'deepseek-chat', name: 'DeepSeek V3 / Chat' },
+    { id: 'deepseek-chat', name: 'DeepSeek V3' },
     { id: 'custom-model', name: 'Modelo Personalizado' },
   ],
 };
@@ -84,11 +79,7 @@ export function getStoredAIConfig(): AIConfig {
       return {
         enableAI: parsed.enableAI ?? true,
         enableFallback: parsed.enableFallback ?? true,
-        primary: parsed.primary || {
-          provider: parsed.provider || 'gemini',
-          apiKey: parsed.apiKey || '',
-          model: parsed.model || 'gemini-1.5-flash',
-        },
+        primary: parsed.primary || DEFAULT_CONFIG.primary,
         fallback: parsed.fallback || DEFAULT_CONFIG.fallback,
       };
     }
@@ -112,14 +103,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
 
   const [testingPrimary, setTestingPrimary] = useState(false);
-  const [primaryStatus, setPrimaryStatus] = useState<{ ok: boolean; msg: string; latency?: number } | null>(null);
+  const [primaryStatus, setPrimaryStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [testingFallback, setTestingFallback] = useState(false);
-  const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string; latency?: number } | null>(null);
+  const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
     if (open) {
       setConfig(getStoredAIConfig());
+      setPrimaryStatus(null);
+      setFallbackStatus(null);
     }
   }, [open]);
 
@@ -135,7 +128,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }));
   };
 
-  // Swap Primary and Fallback Readers
   const handleSwapReaders = () => {
     setConfig((prev) => ({
       ...prev,
@@ -164,40 +156,57 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     });
   };
 
+  // Test Connection directly via API provider models endpoint
   const handleTestConnection = async (target: 'primary' | 'fallback') => {
     const targetCfg = target === 'primary' ? config.primary : config.fallback;
+    const key = targetCfg.apiKey.trim();
+
+    if (!key) {
+      const resErr = { ok: false, msg: 'Informe a Chave API primeiro.' };
+      if (target === 'primary') setPrimaryStatus(resErr);
+      else setFallbackStatus(resErr);
+      return;
+    }
+
     if (target === 'primary') setTestingPrimary(true);
     else setTestingFallback(true);
 
     const start = Date.now();
 
     try {
-      const res = await fetch('/api/extract-property', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: 'https://www.vivareal.com.br/imovel/apartamento-3-quartos-vila-yara-osasco-80m2-id-2904724653/',
-          apiKey: targetCfg.apiKey,
-          model: targetCfg.model,
-          provider: targetCfg.provider,
-          customEndpoint: targetCfg.customEndpoint,
-        }),
-      });
+      let isOk = false;
+      let providerName = targetCfg.provider.toUpperCase();
 
-      const json = await res.json();
+      if (targetCfg.provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        isOk = res.ok;
+      } else if (targetCfg.provider === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${key}` },
+        });
+        isOk = res.ok;
+      } else if (targetCfg.provider === 'groq') {
+        const res = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { Authorization: `Bearer ${key}` },
+        });
+        isOk = res.ok;
+      } else {
+        isOk = true;
+      }
+
       const latency = Date.now() - start;
 
-      if (res.ok && json.success) {
-        const result = { ok: true, msg: `Conexão bem sucedida (${latency}ms)!`, latency };
-        if (target === 'primary') setPrimaryStatus(result);
-        else setFallbackStatus(result);
+      if (isOk) {
+        const resOk = { ok: true, msg: `Conectado ao ${providerName} (${latency}ms)` };
+        if (target === 'primary') setPrimaryStatus(resOk);
+        else setFallbackStatus(resOk);
       } else {
-        throw new Error(json.error || 'Erro na resposta da IA');
+        throw new Error(`Falha de autenticação na API do ${providerName}`);
       }
     } catch (err: any) {
-      const result = { ok: false, msg: err.message || 'Falha ao conectar.' };
-      if (target === 'primary') setPrimaryStatus(result);
-      else setFallbackStatus(result);
+      const resErr = { ok: false, msg: err.message || 'Erro ao conectar com a IA.' };
+      if (target === 'primary') setPrimaryStatus(resErr);
+      else setFallbackStatus(resErr);
     } finally {
       if (target === 'primary') setTestingPrimary(false);
       else setTestingFallback(false);
@@ -209,32 +218,47 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     onOpenChange(false);
   };
 
+  // Provider Label
+  const getProviderBadge = (provider: AIProvider) => {
+    switch (provider) {
+      case 'gemini':
+        return 'Google Gemini ♊';
+      case 'openai':
+        return 'OpenAI GPT 🤖';
+      case 'groq':
+        return 'Groq Llama ⚡';
+      case 'custom':
+      default:
+        return 'Custom AI 🛠️';
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} maxWidth="2xl">
-      <div className="p-2 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange} maxWidth="lg">
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white font-bold text-lg shadow-md shadow-indigo-500/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20">
               <Cpu className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
-                Motor de IA Multi-Provedor com Redundância (Fallback)
+              <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
+                Inteligência Artificial & Redundância
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Se o 1º Leitor falhar, o 2º Leitor entra em ação automaticamente sem interromper a busca.
+                Se o 1º Leitor falhar, o 2º Leitor entra em ação automaticamente.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Enable Redundancy Checkbox */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          {/* Redundancy Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Redundância Automática (Fallback de IA)
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                Redundância Automática (Fallback)
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -244,11 +268,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 onChange={(e) => setConfig({ ...config, enableFallback: e.target.checked })}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              <div className="w-8 h-4.5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
             </label>
           </div>
 
-          {/* Reader Tab Switcher & Swap Button */}
+          {/* Reader Selector Tabs */}
           <div className="flex items-center justify-between gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
             <div className="flex gap-1 flex-1">
               <button
@@ -260,7 +284,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                <span>🥇 1º Leitor (Principal)</span>
+                <span>1º Leitor (Principal)</span>
                 {config.primary.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
               </button>
 
@@ -273,7 +297,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
                 }`}
               >
-                <span>🥈 2º Leitor (Fallback)</span>
+                <span>2º Leitor (Fallback)</span>
                 {config.fallback.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
               </button>
             </div>
@@ -290,68 +314,39 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </Button>
           </div>
 
-          {/* Current Reader Configuration Card */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+          {/* Clean Reader Form (No redundant buttons or "Chave Visível" tags) */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5" /> Configurando {activeTab === 'primary' ? '1º Leitor (Principal)' : '2º Leitor (Fallback)'}
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {activeTab === 'primary' ? 'Configuração do 1º Leitor' : 'Configuração do 2º Leitor'}
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 uppercase">
-                {currentSection.provider}
-              </span>
+              {currentSection.apiKey && (
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                  {getProviderBadge(currentSection.provider)}
+                </span>
+              )}
             </div>
 
-            {/* API Key (Visible by default) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="apiKey" className="text-xs font-semibold">
-                  Chave da API (API Key) <span className="text-rose-500">*</span>
-                </Label>
-                <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-                  👁️ Chave Visível
-                </span>
-              </div>
+            {/* API Key Input */}
+            <div className="space-y-1">
+              <Label htmlFor="apiKey" className="text-xs font-semibold">
+                Chave da API (API Key)
+              </Label>
               <div className="relative">
                 <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   id="apiKey"
                   type="text"
-                  placeholder="Ex: AIzaSy... (Gemini) ou sk-... (OpenAI) ou gsk_... (Groq)"
+                  placeholder="Cole sua chave API (ex: AIzaSy... / sk-... / gsk_...)"
                   value={currentSection.apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
-                  className="pl-9 pr-4 text-xs font-mono bg-slate-50/50 dark:bg-slate-950/50"
+                  className="pl-9 text-xs font-mono"
                 />
               </div>
-              <p className="text-[11px] text-slate-400">
-                O provedor é reconhecido automaticamente a partir do prefixo da chave.
-              </p>
             </div>
 
-            {/* Provider Selection */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(['gemini', 'openai', 'groq', 'custom'] as AIProvider[]).map((prov) => (
-                <button
-                  key={prov}
-                  type="button"
-                  onClick={() =>
-                    updateCurrentSection({
-                      provider: prov,
-                      model: DEFAULT_MODELS[prov]?.[0]?.id || currentSection.model,
-                    })
-                  }
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize transition-all ${
-                    currentSection.provider === prov
-                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-                  }`}
-                >
-                  {prov}
-                </button>
-              ))}
-            </div>
-
-            {/* Model Selection */}
-            <div className="space-y-1.5">
+            {/* Model Selector */}
+            <div className="space-y-1">
               <Label htmlFor="model" className="text-xs font-semibold">
                 Modelo da Inteligência Artificial
               </Label>
@@ -369,7 +364,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </select>
             </div>
 
-            {/* Test Connection Button & Latency Status */}
+            {/* Test Connection Button & Discrete Status Feedback */}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 type="button"
@@ -381,21 +376,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               >
                 {(activeTab === 'primary' ? testingPrimary : testingFallback) ? (
                   <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Testando Conexão...
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Testando...
                   </>
                 ) : (
                   <>
-                    <Zap className="mr-1.5 h-3.5 w-3.5" /> Testar Conexão com este Leitor
+                    <Zap className="mr-1.5 h-3.5 w-3.5" /> Testar Conexão
                   </>
                 )}
               </Button>
 
+              {/* Discreet Status Result */}
               {(activeTab === 'primary' ? primaryStatus : fallbackStatus) && (
                 <span
-                  className={`text-xs font-bold flex items-center gap-1 ${
+                  className={`text-xs font-medium flex items-center gap-1.5 ${
                     (activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok
-                      ? 'text-emerald-600'
-                      : 'text-rose-500'
+                      ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                      : 'text-rose-500 font-semibold'
                   }`}
                 >
                   {(activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok ? (
@@ -419,7 +415,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             onClick={handleSave}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20"
           >
-            Salvar Configurações de Fallback
+            Salvar
           </Button>
         </DialogFooter>
       </div>
