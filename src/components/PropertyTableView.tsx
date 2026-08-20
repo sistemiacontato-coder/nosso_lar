@@ -35,6 +35,11 @@ interface PropertyTableViewProps {
   onToggleCompare: (id: string) => void;
   onQuickUpdateProperty: (id: string, updates: Partial<Property>) => void;
   onToggleArchive?: (id: string) => void;
+  onToggleFavorite?: (id: string) => void;
+  onStatusChange?: (id: string, status: Property['status']) => void;
+  onApproveSuggestion?: (id: string) => void;
+  onOpenRealtorModal?: () => void;
+  onOpenCommuteAnchorsModal?: () => void;
 }
 
 export function PropertyTableView({
