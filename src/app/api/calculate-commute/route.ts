@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Geocodes an address string into lat/lon
 async function geocode(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
