@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProperties } from '@/hooks/useProperties';
 import { Navbar } from '@/components/Navbar';
 import { FilterBar } from '@/components/FilterBar';
@@ -12,9 +12,9 @@ import { PropertyComparisonModal } from '@/components/PropertyComparisonModal';
 import { LoginModal } from '@/components/LoginModal';
 import { SettingsModal } from '@/components/SettingsModal';
 import { RealtorModal } from '@/components/RealtorModal';
-import { CommuteAnchorsModal, getStoredCommuteAnchors } from '@/components/CommuteAnchorsModal';
+import { CommuteAnchorsModal, getStoredCommuteAnchors, DEFAULT_COMMUTE_ANCHORS } from '@/components/CommuteAnchorsModal';
 import { Footer } from '@/components/Footer';
-import { Property, getCoupleMatchBadge } from '@/types/property';
+import { Property, CommuteAnchors, getCoupleMatchBadge } from '@/types/property';
 import { PropertyFormValues } from '@/lib/schemas';
 import { formatCurrency } from '@/lib/utils';
 import { Building, Heart, MapPin, Sparkles, TrendingDown, Clock, Plus, ArrowRight, User } from 'lucide-react';
