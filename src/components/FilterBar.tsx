@@ -232,7 +232,7 @@ export function FilterBar({
           Todos ({totalOverall})
         </button>
 
-        {(['Em Análise', 'Visita Agendada', 'Visitado', 'Favorito', 'Descartado'] as PropertyStatus[]).map(
+        {(['Para Analisar', 'Agendar Visita', 'Visita Agendada', 'Pendente Avaliação', 'Proposta Enviada', 'Descartado'] as PropertyStatus[]).map(
           (status) => {
             const isSelected = filters.status === status;
             return (

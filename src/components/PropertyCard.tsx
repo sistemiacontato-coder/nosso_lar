@@ -49,7 +49,7 @@ export function PropertyCard({
   const [showMenu, setShowMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const statusInfo = STATUS_CONFIG[property.status] || STATUS_CONFIG['Em Análise'];
+  const statusInfo = STATUS_CONFIG[property.status] || STATUS_CONFIG['Para Analisar'];
   const coupleBadge = getCoupleMatchBadge(property.notaSaymon, property.notaKelly);
 
   const handleFavoriteClick = (e: React.MouseEvent) => {

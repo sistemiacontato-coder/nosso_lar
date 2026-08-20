@@ -58,12 +58,13 @@ export const propertyFormSchema = z.object({
     .default(0.5),
   diferenciais: z.array(z.string()).default([]),
   status: z.enum([
-    'Em Análise',
+    'Para Analisar',
+    'Agendar Visita',
     'Visita Agendada',
-    'Visitado',
-    'Favorito',
+    'Pendente Avaliação',
+    'Proposta Enviada',
     'Descartado',
-  ]).default('Em Análise'),
+  ]).default('Para Analisar'),
 
   // Avaliação do Saymon
   notaSaymon: z.coerce.number().min(1).max(5).default(4),
@@ -76,6 +77,7 @@ export const propertyFormSchema = z.object({
   vereditoKelly: z.enum(['Aprovada', 'Gostei', 'Neutra', 'Não Curti']).default('Gostei'),
 
   observacoes: z.string().optional().or(z.literal('')),
+  duvidasCorretor: z.string().optional().or(z.literal('')),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { url } = await req.json();
+    const { url, apiKey: clientApiKey, model: clientModel } = await req.json();
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Extrair Título
+    // 2. Extrair Título Limpo
     let title =
       getMeta('og:title') ||
       getMeta('twitter:title') ||
@@ -80,62 +80,47 @@ export async function POST(req: NextRequest) {
 
     // Detectar Bairro no título/descrição/URL
     let bairro = '';
-    const cleanUrl = decodeURIComponent(url).toLowerCase();
-    if (cleanUrl.includes('vila-yara') || html.toLowerCase().includes('vila yara')) {
+    const fullText = (title + ' ' + description + ' ' + url).toLowerCase();
+
+    if (fullText.includes('continental')) {
+      bairro = 'Vila Yara / Continental - Osasco';
+    } else if (fullText.includes('vila yara') || fullText.includes('yara')) {
       bairro = 'Vila Yara - Osasco';
-    } else if (cleanUrl.includes('vila-sao-francisco') || html.toLowerCase().includes('vila são francisco') || html.toLowerCase().includes('vila sao francisco')) {
-      bairro = 'Vila São Francisco';
-    } else if (cleanUrl.includes('lorian') || html.toLowerCase().includes('lorian boulevard')) {
-      bairro = 'Vila São Francisco / Lorian';
-    } else if (cleanUrl.includes('continental') || html.toLowerCase().includes('continental')) {
-      bairro = 'Continental / Osasco';
-    } else if (cleanUrl.includes('osasco') || html.toLowerCase().includes('osasco')) {
-      bairro = 'Osasco';
+    } else if (fullText.includes('são francisco') || fullText.includes('sao francisco')) {
+      bairro = 'Vila São Francisco - Zona Oeste SP';
+    } else if (fullText.includes('campesina')) {
+      bairro = 'Campesina - Osasco';
+    } else if (fullText.includes('autonomistas')) {
+      bairro = 'Autonomistas - Osasco';
+    } else {
+      bairro = 'Osasco / Zona Oeste';
     }
 
-    // 4. Extrair Valores (Aluguel, Condomínio, IPTU)
+    // 4. Extrair Valores Financeiros (Aluguel, Condomínio, IPTU)
     let aluguel = 0;
     let condominio = 0;
     let iptu = 0;
 
-    // Buscar no padrão R$ 3.800,00 ou R$3,800.00 ou R$ 3.800
-    const priceMatches = html.match(/R\$\s*([\d\.,]+)/gi);
-    if (priceMatches && priceMatches.length > 0) {
-      for (const p of priceMatches) {
-        const clean = p.replace(/[^\d]/g, '');
-        // If ends with 00 (cents), remove last 2 zeros if length > 4
-        let num = parseInt(clean, 10);
-        if (p.includes(',00') || p.includes('.00')) {
-          num = Math.floor(num / 100);
-        }
-        if (num >= 1500 && num <= 30000) {
-          aluguel = num;
-          break;
-        }
-      }
-    }
+    const parseMoney = (str: string): number => {
+      if (!str) return 0;
+      const clean = str.replace(/[^\d,\.]/g, '').replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    };
 
-    // Buscar condomínio no texto
-    const condMatch = html.match(/condom[íi]nio\s*:?\s*R?\$?\s*([\d\.,]+)/i);
-    if (condMatch) {
-      let val = parseInt(condMatch[1].replace(/[^\d]/g, ''), 10);
-      if (condMatch[1].includes(',00') || condMatch[1].includes('.00')) val = Math.floor(val / 100);
-      if (val > 100 && val < 5000) condominio = val;
-    }
+    const priceMatch = html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel)/i);
+    if (priceMatch) aluguel = parseMoney(priceMatch[1]);
 
-    // Buscar IPTU no texto
-    const iptuMatch = html.match(/iptu\s*:?\s*R?\$?\s*([\d\.,]+)/i);
-    if (iptuMatch) {
-      let val = parseInt(iptuMatch[1].replace(/[^\d]/g, ''), 10);
-      if (iptuMatch[1].includes(',00') || iptuMatch[1].includes('.00')) val = Math.floor(val / 100);
-      if (val > 20 && val < 2000) iptu = val;
-    }
+    const condoMatch = html.match(/condom[íi]nio.*?:?\s*R\$\s*([\d\.,]+)/i);
+    if (condoMatch) condominio = parseMoney(condoMatch[1]);
 
-    // 5. Extrair Quartos, Banheiros, Vagas, Metragem
+    const iptuMatch = html.match(/iptu.*?:?\s*R\$\s*([\d\.,]+)/i);
+    if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
+
+    // 5. Extrair Cômodos (Quartos, Suítes, Banheiros, Vagas, m²)
     let quartos = 3;
     let suites = 1;
     let banheiros = 2;
-    let vagas = 1;
+    let vagas = 2;
     let area = 80;
 
     const quartoMatch = html.match(/(\d+)\s*(?:quartos?|dormit[óo]rios?)/i);
@@ -172,6 +157,65 @@ export async function POST(req: NextRequest) {
     if (lowerHtml.includes('quadra')) detectedDiferenciais.push('Quadra de Tênis / Poliesportiva');
     if (lowerHtml.includes('salão de festas') || lowerHtml.includes('salao de festas')) detectedDiferenciais.push('Salão de Festas');
 
+    // Default AI generated questions for realtor
+    let duvidasCorretor = `1. A vaga de garagem é livre ou presa?\n2. O valor do condomínio inclui água ou gás individualizado?\n3. Qual a garantia de locação aceita (caução, seguro fiança ou fiador)?`;
+
+    // 🤖 GOOGLE GEMINI AI INTEL EXTRACTION (IF API KEY IS PROVIDED)
+    const effectiveApiKey = clientApiKey || process.env.GEMINI_API_KEY;
+    const effectiveModel = clientModel || 'gemini-1.5-flash';
+
+    if (effectiveApiKey) {
+      try {
+        const textSample = (title + '\n' + description + '\n' + html.slice(0, 4000)).slice(0, 3000);
+        const prompt = `Analise este texto de anúncio de apartamento para alugar e responda EXCLUSIVAMENTE em formato JSON válido:
+{
+  "titulo": "Apelido limpo do prédio/condomínio sem repetir m² ou quartos",
+  "valorAluguel": 3800,
+  "valorCondominio": 800,
+  "valorIptu": 200,
+  "dormitorios": 3,
+  "suites": 1,
+  "banheiros": 2,
+  "vagasGaragem": 2,
+  "areaUtil": 80,
+  "duvidasCorretor": "Escreva 3 perguntas cruciais e específicas para o casal perguntar ao corretor sobre este imóvel."
+}
+
+Texto do anúncio:
+${textSample}`;
+
+        const aiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${effectiveModel}:generateContent?key=${effectiveApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
+
+        const aiJson = await aiRes.json();
+        const candidateText = aiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candidateText) {
+          const cleanJsonStr = candidateText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const parsedAI = JSON.parse(cleanJsonStr);
+          if (parsedAI.titulo) title = parsedAI.titulo;
+          if (parsedAI.valorAluguel) aluguel = parsedAI.valorAluguel;
+          if (parsedAI.valorCondominio) condominio = parsedAI.valorCondominio;
+          if (parsedAI.valorIptu) iptu = parsedAI.valorIptu;
+          if (parsedAI.dormitorios) quartos = parsedAI.dormitorios;
+          if (parsedAI.suites !== undefined) suites = parsedAI.suites;
+          if (parsedAI.banheiros) banheiros = parsedAI.banheiros;
+          if (parsedAI.vagasGaragem !== undefined) vagas = parsedAI.vagasGaragem;
+          if (parsedAI.areaUtil) area = parsedAI.areaUtil;
+          if (parsedAI.duvidasCorretor) duvidasCorretor = parsedAI.duvidasCorretor;
+        }
+      } catch (aiErr) {
+        console.warn('Fallback para extração via regex (Gemini AI erro):', aiErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -188,6 +232,7 @@ export async function POST(req: NextRequest) {
         areaUtil: area,
         diferenciais: detectedDiferenciais,
         observacoes: description.slice(0, 300),
+        duvidasCorretor: duvidasCorretor,
       },
     });
   } catch (error: any) {

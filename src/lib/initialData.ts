@@ -31,7 +31,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Sol da Manhã',
       'Aceita Pet',
     ],
-    status: 'Favorito',
+    status: 'Proposta Enviada',
 
     // Avaliação Saymon
     notaSaymon: 5,
@@ -47,6 +47,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     notaPessoal: 5,
 
     observacoes: 'Código AP3464-B2MC. Agendar visita presencial para conferir a vista e o sol da manhã.',
+    duvidasCorretor: '1. A vaga de garagem é livre ou presa?\n2. O valor do condomínio inclui água/gás?\n3. Aceita seguro fiança?',
     dataCadastro: '2026-08-16T14:00:00.000Z',
     isFavorito: true,
   },
@@ -79,7 +80,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Elevador',
       'Aceita Pet',
     ],
-    status: 'Visitado',
+    status: 'Pendente Avaliação',
 
     // Avaliação Saymon
     notaSaymon: 5,
@@ -95,6 +96,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     notaPessoal: 5,
 
     observacoes: 'Código AP00770 - Vanderleia Imóveis (Tel/Whats: 11 99487-8624). Total mensal R$ 4.849.',
+    duvidasCorretor: '1. As duas vagas são cobertas e demarcadas?\n2. Tem ar-condicionado na suíte?\n3. O andar é alto?',
     dataCadastro: '2026-08-17T14:30:00.000Z',
     isFavorito: true,
   },
@@ -143,6 +145,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     notaPessoal: 5.0,
 
     observacoes: 'Código AP3527-B2MC. Pacote fechado divulgado por R$ 3.988,00/mês.',
+    duvidasCorretor: '1. O apartamento pega o sol da manhã?\n2. As chaves já estão na imobiliária?',
     dataCadastro: '2026-08-16T15:30:00.000Z',
     isFavorito: true,
   },
@@ -175,7 +178,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Próximo a Parques / Shoppings',
       'Elevador',
     ],
-    status: 'Em Análise',
+    status: 'Para Analisar',
 
     // Avaliação Saymon
     notaSaymon: 4,
@@ -191,6 +194,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     notaPessoal: 4.5,
 
     observacoes: 'VivaReal ID 2904724653. Checar se a vaga de garagem é livre ou presa.',
+    duvidasCorretor: '1. A vaga de garagem é livre ou trancada?\n2. Aceita pet de médio porte?',
     dataCadastro: '2026-08-16T17:00:00.000Z',
     isFavorito: false,
   },
@@ -223,7 +227,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Elevador',
       'Aceita Pet',
     ],
-    status: 'Em Análise',
+    status: 'Para Analisar',
 
     // Avaliação Saymon
     notaSaymon: 4,
@@ -239,6 +243,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     notaPessoal: 4.0,
 
     observacoes: 'VivaReal ID 2903669398. Comparar com o de 84m² da Vila Yara que tem 2 vagas de garagem.',
+    duvidasCorretor: '1. O apartamento possui armários em todos os 3 quartos?\n2. O condomínio tem gerador para o elevador?',
     dataCadastro: '2026-08-17T10:00:00.000Z',
     isFavorito: false,
   },

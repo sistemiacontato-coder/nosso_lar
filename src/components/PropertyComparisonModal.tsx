@@ -127,7 +127,7 @@ export function PropertyComparisonModal({
 
               {/* Property Card Previews */}
               {properties.map((prop) => {
-                const statusCfg = STATUS_CONFIG[prop.status] || STATUS_CONFIG['Em Análise'];
+                const statusCfg = STATUS_CONFIG[prop.status] || STATUS_CONFIG['Para Analisar'];
                 const coupleBadge = getCoupleMatchBadge(prop.notaSaymon, prop.notaKelly);
 
                 return (

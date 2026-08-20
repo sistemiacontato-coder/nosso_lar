@@ -43,7 +43,7 @@ export function PropertyDetailModal({
 }: PropertyDetailModalProps) {
   if (!property) return null;
 
-  const statusCfg = STATUS_CONFIG[property.status] || STATUS_CONFIG['Em Análise'];
+  const statusCfg = STATUS_CONFIG[property.status] || STATUS_CONFIG['Para Analisar'];
   const coupleBadge = getCoupleMatchBadge(property.notaSaymon, property.notaKelly);
 
   const handleShare = () => {

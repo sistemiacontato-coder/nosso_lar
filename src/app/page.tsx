@@ -11,6 +11,9 @@ import { PropertyFormModal } from '@/components/PropertyFormModal';
 import { PropertyDetailModal } from '@/components/PropertyDetailModal';
 import { PropertyComparisonModal } from '@/components/PropertyComparisonModal';
 import { LoginModal } from '@/components/LoginModal';
+import { SettingsModal } from '@/components/SettingsModal';
+import { RealtorModal } from '@/components/RealtorModal';
+import { Footer } from '@/components/Footer';
 import { Property } from '@/types/property';
 import { PropertyFormValues } from '@/lib/schemas';
 import { Home } from 'lucide-react';
@@ -18,9 +21,12 @@ import { Home } from 'lucide-react';
 function DashboardContent() {
   const {
     properties,
+    nossosImoveis,
+    sugestoesCorretores,
     filteredProperties,
     totalCount,
     filteredCount,
+    sugestoesCount,
     isLoaded,
     filters,
     setFilters,
@@ -31,6 +37,8 @@ function DashboardContent() {
     toggleComparison,
     clearComparison,
     addProperty,
+    addRealtorSuggestion,
+    approveSuggestion,
     updateProperty,
     quickUpdateProperty,
     deleteProperty,
@@ -52,6 +60,8 @@ function DashboardContent() {
   const [detailProperty, setDetailProperty] = useState<Property | null>(null);
 
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRealtorOpen, setIsRealtorOpen] = useState(false);
 
   // Handlers
   const handleOpenNew = () => {
@@ -107,12 +117,24 @@ function DashboardContent() {
       <Navbar
         onOpenNewProperty={handleOpenNew}
         onOpenComparison={() => setIsComparisonOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         compareCount={selectedForComparison.length}
         totalCount={totalCount}
       />
 
       {/* Login Dialog */}
       <LoginModal />
+
+      {/* AI Settings Modal */}
+      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+
+      {/* Realtor Modal */}
+      <RealtorModal
+        open={isRealtorOpen}
+        onOpenChange={setIsRealtorOpen}
+        onSubmitSuggestion={addRealtorSuggestion}
+        existingProperties={properties}
+      />
 
       {/* Main SaaS Width Container (Estilo Notion / Gmail / SaaS Moderno: max-w-[1600px]) */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -151,6 +173,7 @@ function DashboardContent() {
         ) : (
           <PropertyTableView
             properties={filteredProperties}
+            sugestoesProperties={sugestoesCorretores}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onToggleFavorite={toggleFavorite}
@@ -159,17 +182,14 @@ function DashboardContent() {
             selectedForComparison={selectedForComparison}
             onToggleCompare={toggleComparison}
             onQuickUpdateProperty={quickUpdateProperty}
+            onApproveSuggestion={approveSuggestion}
+            onOpenRealtorModal={() => setIsRealtorOpen(true)}
           />
         )}
       </main>
 
-      {/* Clean Footer */}
-      <footer className="border-t border-slate-200/80 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/50 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
-        <div className="max-w-[1600px] w-full mx-auto px-4 flex items-center justify-between">
-          <span>Nosso Lar © {new Date().getFullYear()} — Dashboard de Decisão do Casal Saymon & Kelly 💑</span>
-          <span className="text-slate-400">Desenvolvido sob medida para a melhor escolha de aluguel.</span>
-        </div>
-      </footer>
+      {/* Official Sistemia Footer with Logo & WhatsApp Button */}
+      <Footer />
 
       {/* Form Modal (Create / Edit) */}
       <PropertyFormModal
@@ -177,6 +197,7 @@ function DashboardContent() {
         onOpenChange={setIsFormOpen}
         onSubmit={handleFormSubmit}
         initialData={editingProperty}
+        existingProperties={properties}
       />
 
       {/* Detail Modal */}

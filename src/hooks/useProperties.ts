@@ -7,7 +7,7 @@ import { useLocalStorage } from './useLocalStorage';
 import { calculateTotals } from '@/lib/utils';
 import { PropertyFormValues } from '@/lib/schemas';
 
-const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v5';
+const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v7';
 
 export function useProperties() {
   const [properties, setProperties, isLoaded] = useLocalStorage<Property[]>(
@@ -60,37 +60,38 @@ export function useProperties() {
         banheiros: Number(values.banheiros),
         vagasGaragem: Number(values.vagasGaragem || 0),
         areaUtil: Number(values.areaUtil),
-        precoMetroQuadrado: Number(precoM2.toFixed(1)),
-        tempoAteTrabalhoMinutos: Number(values.tempoAteTrabalhoMinutos || 0),
-        distanciaMetroKm: Number(values.distanciaMetroKm || 0),
+        precoMetroQuadrado: precoM2,
+        tempoAteTrabalhoMinutos: Number(values.tempoAteTrabalhoMinutos || 25),
+        distanciaMetroKm: Number(values.distanciaMetroKm || 1.5),
         diferenciais: values.diferenciais || [],
-        status: values.status || 'Em Análise',
+        status: values.status || 'Para Analisar',
 
-        // Saymon & Kelly
         notaSaymon: nSaymon,
         vereditoSaymon: values.vereditoSaymon || 'Gostei',
-        opiniaoSaymon: values.opiniaoSaymon?.trim() || '',
+        opiniaoSaymon: values.opiniaoSaymon?.trim() || undefined,
 
         notaKelly: nKelly,
         vereditoKelly: values.vereditoKelly || 'Gostei',
-        opiniaoKelly: values.opiniaoKelly?.trim() || '',
+        opiniaoKelly: values.opiniaoKelly?.trim() || undefined,
 
-        mediaCasal,
+        mediaCasal: mediaCasal,
         notaPessoal: mediaCasal,
 
-        observacoes: values.observacoes?.trim() || '',
+        observacoes: values.observacoes?.trim() || undefined,
+        duvidasCorretor: values.duvidasCorretor?.trim() || undefined,
+        isSugestao: false,
         dataCadastro: new Date().toISOString(),
-        isFavorito: values.status === 'Favorito' || (nSaymon >= 5 && nKelly >= 5),
+        isFavorito: false,
       };
 
       setProperties((prev) => [newProperty, ...prev]);
-      return newProperty;
     },
     [setProperties]
   );
 
-  const updateProperty = useCallback(
-    (id: string, values: PropertyFormValues) => {
+  // Add Realtor Suggestion
+  const addRealtorSuggestion = useCallback(
+    (values: PropertyFormValues, nomeCorretor: string, telefoneCorretor: string) => {
       const { custoTotal, precoM2 } = calculateTotals(
         values.valorAluguel,
         values.valorCondominio,
@@ -98,15 +99,80 @@ export function useProperties() {
         values.areaUtil
       );
 
-      const nSaymon = Number(values.notaSaymon || 4);
-      const nKelly = Number(values.notaKelly || 4);
-      const mediaCasal = Number(((nSaymon + nKelly) / 2).toFixed(1));
+      const newProperty: Property = {
+        id: `sugestao-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        titulo: values.titulo.trim(),
+        urlAnuncio: values.urlAnuncio.trim(),
+        urlImagem: values.urlImagem?.trim() || undefined,
+        bairro: values.bairro.trim(),
+        endereco: values.endereco?.trim() || undefined,
+        valorAluguel: Number(values.valorAluguel),
+        valorCondominio: Number(values.valorCondominio || 0),
+        valorIptu: Number(values.valorIptu || 0),
+        custoTotalMensal: custoTotal,
+        dormitorios: Number(values.dormitorios),
+        suites: Number(values.suites || 0),
+        banheiros: Number(values.banheiros),
+        vagasGaragem: Number(values.vagasGaragem || 0),
+        areaUtil: Number(values.areaUtil),
+        precoMetroQuadrado: precoM2,
+        tempoAteTrabalhoMinutos: Number(values.tempoAteTrabalhoMinutos || 25),
+        distanciaMetroKm: Number(values.distanciaMetroKm || 1.5),
+        diferenciais: values.diferenciais || [],
+        status: 'Para Analisar',
 
+        notaSaymon: 4,
+        vereditoSaymon: 'Gostei',
+        notaKelly: 4,
+        vereditoKelly: 'Gostei',
+        mediaCasal: 4.0,
+        notaPessoal: 4.0,
+
+        observacoes: values.observacoes?.trim() || undefined,
+        duvidasCorretor: values.duvidasCorretor?.trim() || undefined,
+        isSugestao: true,
+        nomeCorretor: nomeCorretor.trim(),
+        telefoneCorretor: telefoneCorretor.trim(),
+        dataCadastro: new Date().toISOString(),
+        isFavorito: false,
+      };
+
+      setProperties((prev) => [newProperty, ...prev]);
+    },
+    [setProperties]
+  );
+
+  // Approve suggestion
+  const approveSuggestion = useCallback(
+    (id: string) => {
       setProperties((prev) =>
-        prev.map((prop) => {
-          if (prop.id !== id) return prop;
+        prev.map((item) =>
+          item.id === id ? { ...item, isSugestao: false } : item
+        )
+      );
+    },
+    [setProperties]
+  );
+
+  const updateProperty = useCallback(
+    (id: string, values: PropertyFormValues) => {
+      setProperties((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+
+          const { custoTotal, precoM2 } = calculateTotals(
+            values.valorAluguel,
+            values.valorCondominio,
+            values.valorIptu,
+            values.areaUtil
+          );
+
+          const nSaymon = Number(values.notaSaymon || item.notaSaymon);
+          const nKelly = Number(values.notaKelly || item.notaKelly);
+          const mediaCasal = Number(((nSaymon + nKelly) / 2).toFixed(1));
+
           return {
-            ...prop,
+            ...item,
             titulo: values.titulo.trim(),
             urlAnuncio: values.urlAnuncio.trim(),
             urlImagem: values.urlImagem?.trim() || undefined,
@@ -121,26 +187,54 @@ export function useProperties() {
             banheiros: Number(values.banheiros),
             vagasGaragem: Number(values.vagasGaragem || 0),
             areaUtil: Number(values.areaUtil),
-            precoMetroQuadrado: Number(precoM2.toFixed(1)),
-            tempoAteTrabalhoMinutos: Number(values.tempoAteTrabalhoMinutos || 0),
-            distanciaMetroKm: Number(values.distanciaMetroKm || 0),
+            precoMetroQuadrado: precoM2,
+            tempoAteTrabalhoMinutos: Number(values.tempoAteTrabalhoMinutos),
+            distanciaMetroKm: Number(values.distanciaMetroKm),
             diferenciais: values.diferenciais || [],
             status: values.status,
 
-            // Saymon & Kelly
             notaSaymon: nSaymon,
             vereditoSaymon: values.vereditoSaymon,
-            opiniaoSaymon: values.opiniaoSaymon?.trim() || '',
+            opiniaoSaymon: values.opiniaoSaymon?.trim() || undefined,
 
             notaKelly: nKelly,
             vereditoKelly: values.vereditoKelly,
-            opiniaoKelly: values.opiniaoKelly?.trim() || '',
+            opiniaoKelly: values.opiniaoKelly?.trim() || undefined,
 
-            mediaCasal,
+            mediaCasal: mediaCasal,
             notaPessoal: mediaCasal,
 
-            observacoes: values.observacoes?.trim() || '',
-            isFavorito: values.status === 'Favorito' ? true : prop.isFavorito,
+            observacoes: values.observacoes?.trim() || undefined,
+            duvidasCorretor: values.duvidasCorretor?.trim() || undefined,
+          };
+        })
+      );
+    },
+    [setProperties]
+  );
+
+  const quickUpdateProperty = useCallback(
+    (id: string, updates: Partial<Property>) => {
+      setProperties((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          const updated = { ...item, ...updates };
+
+          const { custoTotal, precoM2 } = calculateTotals(
+            updated.valorAluguel,
+            updated.valorCondominio,
+            updated.valorIptu,
+            updated.areaUtil
+          );
+
+          const media = Number(((updated.notaSaymon + updated.notaKelly) / 2).toFixed(1));
+
+          return {
+            ...updated,
+            custoTotalMensal: custoTotal,
+            precoMetroQuadrado: precoM2,
+            mediaCasal: media,
+            notaPessoal: media,
           };
         })
       );
@@ -150,7 +244,7 @@ export function useProperties() {
 
   const deleteProperty = useCallback(
     (id: string) => {
-      setProperties((prev) => prev.filter((prop) => prop.id !== id));
+      setProperties((prev) => prev.filter((item) => item.id !== id));
       setSelectedForComparison((prev) => prev.filter((item) => item !== id));
     },
     [setProperties]
@@ -158,57 +252,25 @@ export function useProperties() {
 
   const duplicateProperty = useCallback(
     (id: string) => {
-      const source = properties.find((p) => p.id === id);
-      if (!source) return;
+      const target = properties.find((p) => p.id === id);
+      if (!target) return;
+
       const clone: Property = {
-        ...source,
+        ...target,
         id: `prop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        titulo: `${source.titulo} (Cópia)`,
+        titulo: `${target.titulo} (Cópia)`,
         dataCadastro: new Date().toISOString(),
       };
+
       setProperties((prev) => [clone, ...prev]);
     },
     [properties, setProperties]
   );
 
-  const quickUpdateProperty = useCallback(
-    (id: string, updates: Partial<Property>) => {
-      setProperties((prev) =>
-        prev.map((prop) => {
-          if (prop.id !== id) return prop;
-          const merged = { ...prop, ...updates };
-          if (updates.valorAluguel !== undefined || updates.valorCondominio !== undefined || updates.valorIptu !== undefined || updates.areaUtil !== undefined) {
-            const { custoTotal, precoM2 } = calculateTotals(
-              merged.valorAluguel,
-              merged.valorCondominio,
-              merged.valorIptu,
-              merged.areaUtil
-            );
-            merged.custoTotalMensal = custoTotal;
-            merged.precoMetroQuadrado = Number(precoM2.toFixed(1));
-          }
-          if (updates.notaSaymon !== undefined || updates.notaKelly !== undefined) {
-            merged.mediaCasal = Number(((merged.notaSaymon + merged.notaKelly) / 2).toFixed(1));
-            merged.notaPessoal = merged.mediaCasal;
-          }
-          return merged;
-        })
-      );
-    },
-    [setProperties]
-  );
-
   const updateStatus = useCallback(
-    (id: string, newStatus: PropertyStatus) => {
+    (id: string, status: PropertyStatus) => {
       setProperties((prev) =>
-        prev.map((prop) => {
-          if (prop.id !== id) return prop;
-          return {
-            ...prop,
-            status: newStatus,
-            isFavorito: newStatus === 'Favorito' ? true : prop.isFavorito,
-          };
-        })
+        prev.map((item) => (item.id === id ? { ...item, status } : item))
       );
     },
     [setProperties]
@@ -217,15 +279,9 @@ export function useProperties() {
   const toggleFavorite = useCallback(
     (id: string) => {
       setProperties((prev) =>
-        prev.map((prop) => {
-          if (prop.id !== id) return prop;
-          const nextFav = !prop.isFavorito;
-          return {
-            ...prop,
-            isFavorito: nextFav,
-            status: nextFav && prop.status !== 'Favorito' ? 'Favorito' : prop.status === 'Favorito' && !nextFav ? 'Em Análise' : prop.status,
-          };
-        })
+        prev.map((item) =>
+          item.id === id ? { ...item, isFavorito: !item.isFavorito } : item
+        )
       );
     },
     [setProperties]
@@ -237,7 +293,8 @@ export function useProperties() {
         return prev.filter((item) => item !== id);
       }
       if (prev.length >= 4) {
-        return [...prev.slice(1), id];
+        alert('Você só pode comparar até 4 imóveis simultaneamente.');
+        return prev;
       }
       return [...prev, id];
     });
@@ -252,139 +309,99 @@ export function useProperties() {
     setSelectedForComparison([]);
   }, [setProperties]);
 
-  const exportToJson = useCallback(() => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(properties, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `imoveis_saymon_kelly_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  }, [properties]);
+  // Main properties vs Realtor suggestions
+  const nossosImoveis = useMemo(() => properties.filter((p) => !p.isSugestao), [properties]);
+  const sugestoesCorretores = useMemo(() => properties.filter((p) => p.isSugestao), [properties]);
 
-  const importFromJson = useCallback(
-    (jsonData: string) => {
-      try {
-        const parsed = JSON.parse(jsonData);
-        if (!Array.isArray(parsed)) {
-          throw new Error('O arquivo JSON deve conter um array de imóveis');
-        }
-        const validated = parsed.map((item, idx) => {
-          if (!item.titulo || typeof item.valorAluguel !== 'number') {
-            throw new Error(`Item ${idx + 1} inválido no arquivo.`);
-          }
-          const nSaymon = item.notaSaymon || item.notaPessoal || 4;
-          const nKelly = item.notaKelly || item.notaPessoal || 4;
-          return {
-            ...item,
-            id: item.id || `imported-${Date.now()}-${idx}`,
-            notaSaymon: nSaymon,
-            notaKelly: nKelly,
-            mediaCasal: item.mediaCasal || ((nSaymon + nKelly) / 2),
-            custoTotalMensal: item.custoTotalMensal || calculateTotals(item.valorAluguel, item.valorCondominio, item.valorIptu, item.areaUtil).custoTotal,
-            precoMetroQuadrado: item.precoMetroQuadrado || calculateTotals(item.valorAluguel, item.valorCondominio, item.valorIptu, item.areaUtil).precoM2,
-            dataCadastro: item.dataCadastro || new Date().toISOString(),
-          };
-        });
-
-        setProperties(validated);
-        setSelectedForComparison([]);
-        return { success: true, count: validated.length };
-      } catch (err: any) {
-        return { success: false, error: err.message || 'Erro ao importar arquivo JSON.' };
-      }
-    },
-    [setProperties]
-  );
-
-  // Filtered
+  // Filtering for Nossos Imóveis
   const filteredProperties = useMemo(() => {
-    return properties.filter((prop) => {
-      // Search
+    return nossosImoveis.filter((prop) => {
       if (filters.search) {
-        const q = filters.search.toLowerCase();
-        const matchTitle = prop.titulo.toLowerCase().includes(q);
-        const matchBairro = prop.bairro.toLowerCase().includes(q);
-        const matchObs = prop.observacoes?.toLowerCase().includes(q);
-        const matchSaymon = prop.opiniaoSaymon?.toLowerCase().includes(q);
-        const matchKelly = prop.opiniaoKelly?.toLowerCase().includes(q);
-        if (!matchTitle && !matchBairro && !matchObs && !matchSaymon && !matchKelly) return false;
+        const query = filters.search.toLowerCase();
+        const matchesTitle = prop.titulo.toLowerCase().includes(query);
+        const matchesBairro = prop.bairro.toLowerCase().includes(query);
+        const matchesEndereco = prop.endereco?.toLowerCase().includes(query);
+        const matchesSaymon = prop.opiniaoSaymon?.toLowerCase().includes(query);
+        const matchesKelly = prop.opiniaoKelly?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesBairro && !matchesEndereco && !matchesSaymon && !matchesKelly) {
+          return false;
+        }
       }
 
-      // Status
       if (filters.status !== 'todos' && prop.status !== filters.status) {
         return false;
       }
 
-      // Max price
       if (filters.precoMax && prop.custoTotalMensal > filters.precoMax) {
         return false;
       }
 
-      // Min bedrooms
       if (filters.dormitoriosMin && prop.dormitorios < filters.dormitoriosMin) {
         return false;
       }
 
-      // Min parking
       if (filters.vagasMin && prop.vagasGaragem < filters.vagasMin) {
         return false;
       }
 
-      // Commute
+      if (filters.apenasFavoritos && !prop.isFavorito) {
+        return false;
+      }
+
+      if (filters.apenasMatchPerfeito && (prop.notaSaymon < 5 || prop.notaKelly < 5)) {
+        return false;
+      }
+
       if (filters.tempoMaxTrabalho && prop.tempoAteTrabalhoMinutos > filters.tempoMaxTrabalho) {
         return false;
       }
 
-      // Favorites
-      if (filters.apenasFavoritos && !prop.isFavorito && prop.status !== 'Favorito') {
-        return false;
-      }
-
-      // Match do Casal
-      if (filters.apenasMatchPerfeito && (prop.notaSaymon < 4 || prop.notaKelly < 4)) {
-        return false;
-      }
-
-      // Differentials
       if (filters.diferenciais.length > 0) {
-        const hasAll = filters.diferenciais.every((diff) => prop.diferenciais.includes(diff));
-        if (!hasAll) return false;
+        const hasAllTags = filters.diferenciais.every((tag) =>
+          prop.diferenciais.includes(tag)
+        );
+        if (!hasAllTags) return false;
       }
 
       return true;
     });
-  }, [properties, filters]);
+  }, [nossosImoveis, filters]);
 
-  // Sorted
+  // Sorting
   const sortedProperties = useMemo(() => {
     const list = [...filteredProperties];
-    switch (sortKey) {
-      case 'mediaCasal_desc':
-        return list.sort((a, b) => b.mediaCasal - a.mediaCasal);
-      case 'notaSaymon_desc':
-        return list.sort((a, b) => b.notaSaymon - a.notaSaymon);
-      case 'notaKelly_desc':
-        return list.sort((a, b) => b.notaKelly - a.notaKelly);
-      case 'precoTotal_asc':
-        return list.sort((a, b) => a.custoTotalMensal - b.custoTotalMensal);
-      case 'precoTotal_desc':
-        return list.sort((a, b) => b.custoTotalMensal - a.custoTotalMensal);
-      case 'precoM2_asc':
-        return list.sort((a, b) => a.precoMetroQuadrado - b.precoMetroQuadrado);
-      case 'tempoTrabalho_asc':
-        return list.sort((a, b) => a.tempoAteTrabalhoMinutos - b.tempoAteTrabalhoMinutos);
-      case 'area_desc':
-        return list.sort((a, b) => b.areaUtil - a.areaUtil);
-      case 'recente_desc':
-      default:
-        return list.sort((a, b) => new Date(b.dataCadastro).getTime() - new Date(a.dataCadastro).getTime());
-    }
+    list.sort((a, b) => {
+      switch (sortKey) {
+        case 'mediaCasal_desc':
+          return b.mediaCasal - a.mediaCasal;
+        case 'notaSaymon_desc':
+          return b.notaSaymon - a.notaSaymon;
+        case 'notaKelly_desc':
+          return b.notaKelly - a.notaKelly;
+        case 'precoTotal_asc':
+          return a.custoTotalMensal - b.custoTotalMensal;
+        case 'precoTotal_desc':
+          return b.custoTotalMensal - a.custoTotalMensal;
+        case 'precoM2_asc':
+          return a.precoMetroQuadrado - b.precoMetroQuadrado;
+        case 'tempoTrabalho_asc':
+          return a.tempoAteTrabalhoMinutos - b.tempoAteTrabalhoMinutos;
+        case 'area_desc':
+          return b.areaUtil - a.areaUtil;
+        case 'recente_desc':
+        default:
+          return new Date(b.dataCadastro).getTime() - new Date(a.dataCadastro).getTime();
+      }
+    });
+    return list;
   }, [filteredProperties, sortKey]);
 
-  // KPIs
+  const comparisonProperties = useMemo(() => {
+    return properties.filter((p) => selectedForComparison.includes(p.id));
+  }, [properties, selectedForComparison]);
+
   const kpis = useMemo(() => {
-    if (properties.length === 0) {
+    if (nossosImoveis.length === 0) {
       return {
         total: 0,
         mediaCusto: 0,
@@ -396,15 +413,24 @@ export function useProperties() {
       };
     }
 
-    const total = properties.length;
-    const somaCusto = properties.reduce((acc, p) => acc + p.custoTotalMensal, 0);
-    const mediaCusto = Math.round(somaCusto / total);
+    const total = nossosImoveis.length;
+    const somaPreco = nossosImoveis.reduce((acc, p) => acc + p.custoTotalMensal, 0);
+    const mediaCusto = Math.round(somaPreco / total);
 
-    const menorCustoTotal = [...properties].sort((a, b) => a.custoTotalMensal - b.custoTotalMensal)[0];
-    const maisPertoTrabalho = [...properties].sort((a, b) => a.tempoAteTrabalhoMinutos - b.tempoAteTrabalhoMinutos)[0];
-    const topCasalMatch = [...properties].sort((a, b) => b.mediaCasal - a.mediaCasal)[0];
-    const favoritoSaymon = [...properties].sort((a, b) => b.notaSaymon - a.notaSaymon)[0];
-    const favoritaKelly = [...properties].sort((a, b) => b.notaKelly - a.notaKelly)[0];
+    const sortedByPrice = [...nossosImoveis].sort((a, b) => a.custoTotalMensal - b.custoTotalMensal);
+    const menorCustoTotal = sortedByPrice[0] || null;
+
+    const sortedByCommute = [...nossosImoveis].sort((a, b) => a.tempoAteTrabalhoMinutos - b.tempoAteTrabalhoMinutos);
+    const maisPertoTrabalho = sortedByCommute[0] || null;
+
+    const sortedByMatch = [...nossosImoveis].sort((a, b) => b.mediaCasal - a.mediaCasal);
+    const topCasalMatch = sortedByMatch[0] || null;
+
+    const sortedBySaymon = [...nossosImoveis].sort((a, b) => b.notaSaymon - a.notaSaymon);
+    const favoritoSaymon = sortedBySaymon[0] || null;
+
+    const sortedByKelly = [...nossosImoveis].sort((a, b) => b.notaKelly - a.notaKelly);
+    const favoritaKelly = sortedByKelly[0] || null;
 
     return {
       total,
@@ -415,17 +441,16 @@ export function useProperties() {
       favoritoSaymon,
       favoritaKelly,
     };
-  }, [properties]);
-
-  const comparisonProperties = useMemo(() => {
-    return properties.filter((p) => selectedForComparison.includes(p.id));
-  }, [properties, selectedForComparison]);
+  }, [nossosImoveis]);
 
   return {
     properties,
+    nossosImoveis,
+    sugestoesCorretores,
     filteredProperties: sortedProperties,
-    totalCount: properties.length,
+    totalCount: nossosImoveis.length,
     filteredCount: sortedProperties.length,
+    sugestoesCount: sugestoesCorretores.length,
     isLoaded,
     filters,
     setFilters,
@@ -436,6 +461,8 @@ export function useProperties() {
     toggleComparison,
     clearComparison,
     addProperty,
+    addRealtorSuggestion,
+    approveSuggestion,
     updateProperty,
     quickUpdateProperty,
     deleteProperty,
@@ -443,8 +470,6 @@ export function useProperties() {
     updateStatus,
     toggleFavorite,
     resetToSampleData,
-    exportToJson,
-    importFromJson,
     kpis,
   };
 }

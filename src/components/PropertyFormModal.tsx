@@ -32,6 +32,7 @@ interface PropertyFormModalProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: PropertyFormValues) => void;
   initialData?: Property | null;
+  existingProperties?: Property[];
 }
 
 export function PropertyFormModal({
@@ -39,6 +40,7 @@ export function PropertyFormModal({
   onOpenChange,
   onSubmit,
   initialData,
+  existingProperties = [],
 }: PropertyFormModalProps) {
   const isEditing = !!initialData;
   const [entryMode, setEntryMode] = useState<'scan' | 'manual'>('scan');
@@ -46,6 +48,7 @@ export function PropertyFormModal({
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractSuccess, setExtractSuccess] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
   const defaultValues: PropertyFormValues = {
     titulo: '',
@@ -64,7 +67,7 @@ export function PropertyFormModal({
     tempoAteTrabalhoMinutos: 25,
     distanciaMetroKm: 1.5,
     diferenciais: ['Varanda Gourmet', 'Portaria 24h / Blindada', 'Piscina', 'Academia'],
-    status: 'Em Análise',
+    status: 'Para Analisar',
 
     // Saymon
     notaSaymon: 5,
@@ -136,18 +139,37 @@ export function PropertyFormModal({
     }
   }, [open, initialData, reset, isEditing]);
 
+  // Duplicate check helper
+  const checkDuplicateUrl = (url: string) => {
+    if (!url.trim()) return null;
+    const cleanUrl = url.trim().toLowerCase().replace(/\/$/, '');
+    const found = existingProperties.find(
+      (p) => p.urlAnuncio && p.urlAnuncio.trim().toLowerCase().replace(/\/$/, '') === cleanUrl
+    );
+    return found || null;
+  };
+
   // Magic Auto Extract Handler
-  const handleAutoExtract = async () => {
-    if (!extractUrl.trim()) return;
+  const handleAutoExtractWithUrl = async (targetUrl: string) => {
+    if (!targetUrl.trim()) return;
+    
+    // Validate duplicate first
+    const dup = checkDuplicateUrl(targetUrl);
+    if (dup) {
+      setDuplicateWarning(`⚠️ Link Repetido! Este imóvel já está cadastrado como "${dup.titulo}" (${dup.bairro}).`);
+      return;
+    }
+
     setIsExtracting(true);
     setExtractError(null);
     setExtractSuccess(null);
+    setDuplicateWarning(null);
 
     try {
       const res = await fetch('/api/extract-property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: extractUrl.trim() }),
+        body: JSON.stringify({ url: targetUrl.trim() }),
       });
 
       const json = await res.json();
@@ -157,7 +179,7 @@ export function PropertyFormModal({
       }
 
       const data = json.data;
-      setValue('urlAnuncio', extractUrl.trim(), { shouldValidate: true });
+      setValue('urlAnuncio', targetUrl.trim(), { shouldValidate: true });
       if (data.titulo) setValue('titulo', data.titulo, { shouldValidate: true });
       if (data.urlImagem) setValue('urlImagem', data.urlImagem, { shouldValidate: true });
       if (data.bairro) setValue('bairro', data.bairro, { shouldValidate: true });
@@ -174,13 +196,15 @@ export function PropertyFormModal({
       }
       if (data.observacoes) setValue('observacoes', data.observacoes);
 
-      setExtractSuccess('Foto real e dados extraídos com sucesso! Confira e edite abaixo antes de salvar.');
+      setExtractSuccess('🎉 Título e dados extraídos automaticamente! O formulário foi preenchido.');
     } catch (err: any) {
       setExtractError(err.message || 'Não foi possível extrair automaticamente. Preencha manualmente.');
     } finally {
       setIsExtracting(false);
     }
   };
+
+  const handleAutoExtract = () => handleAutoExtractWithUrl(extractUrl);
 
   // Watch for live total calculation
   const watchedAluguel = watch('valorAluguel') || 0;
@@ -281,7 +305,23 @@ export function PropertyFormModal({
               <Input
                 placeholder="Cole a URL do imóvel (ex: https://www.vivareal.com.br/imovel/...)"
                 value={extractUrl}
-                onChange={(e) => setExtractUrl(e.target.value)}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  setExtractUrl(url);
+                  const dup = checkDuplicateUrl(url);
+                  if (dup) {
+                    setDuplicateWarning(`⚠️ Link Repetido! Este imóvel já foi cadastrado como "${dup.titulo}" (${dup.bairro}).`);
+                  } else {
+                    setDuplicateWarning(null);
+                  }
+                }}
+                onPaste={(e) => {
+                  const pastedUrl = e.clipboardData.getData('text');
+                  if (pastedUrl && (pastedUrl.startsWith('http://') || pastedUrl.startsWith('https://'))) {
+                    setExtractUrl(pastedUrl);
+                    handleAutoExtractWithUrl(pastedUrl);
+                  }
+                }}
                 className="h-10 text-xs bg-slate-50 dark:bg-slate-950"
               />
               <Button
@@ -303,6 +343,12 @@ export function PropertyFormModal({
                 )}
               </Button>
             </div>
+
+            {duplicateWarning && (
+              <p className="mt-2 text-xs text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/60 p-2 rounded-lg border border-rose-200 dark:border-rose-800">
+                {duplicateWarning}
+              </p>
+            )}
 
             {extractError && (
               <p className="text-xs text-rose-500 font-medium mt-2">{extractError}</p>
@@ -775,20 +821,40 @@ export function PropertyFormModal({
           </div>
         </div>
 
-        {/* SECTION 7: STATUS GERAL */}
+        {/* SECTION 7: DÚVIDAS PARA O CORRETOR */}
+        <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              7. Dúvidas & Perguntas para Fazer ao Corretor
+            </h4>
+          </div>
+          <Textarea
+            id="duvidasCorretor"
+            rows={3}
+            placeholder="Ex: 1. A vaga de garagem é livre ou presa? 2. Qual a garantia aceita? 3. O condomínio inclui água/gás?"
+            {...register('duvidasCorretor')}
+          />
+          <p className="text-[11px] text-slate-400">
+            Dica: Anote suas dúvidas aqui. Na ficha do imóvel haverá um botão para <strong>copiar direto para o WhatsApp do corretor</strong>!
+          </p>
+        </div>
+
+        {/* SECTION 8: STATUS GERAL */}
         <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="status">Status do Imóvel</Label>
+              <Label htmlFor="status">Status no Funil de Decisão</Label>
               <select
                 id="status"
                 {...register('status')}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
               >
-                <option value="Em Análise">Em Análise</option>
+                <option value="Para Analisar">Para Analisar</option>
+                <option value="Agendar Visita">Agendar Visita</option>
                 <option value="Visita Agendada">Visita Agendada</option>
-                <option value="Visitado">Visitado (Pendente Avaliação)</option>
-                <option value="Favorito">Favorito</option>
+                <option value="Pendente Avaliação">Pendente Avaliação</option>
+                <option value="Proposta Enviada">Proposta Enviada</option>
                 <option value="Descartado">Descartado</option>
               </select>
             </div>

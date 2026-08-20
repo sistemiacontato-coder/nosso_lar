@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 interface NavbarProps {
   onOpenNewProperty: () => void;
   onOpenComparison: () => void;
+  onOpenSettings?: () => void;
   compareCount: number;
   totalCount: number;
 }
@@ -17,6 +18,7 @@ interface NavbarProps {
 export function Navbar({
   onOpenNewProperty,
   onOpenComparison,
+  onOpenSettings,
   compareCount,
   totalCount,
 }: NavbarProps) {
@@ -71,6 +73,20 @@ export function Navbar({
 
           {/* Theme Switcher */}
           <ThemeToggle />
+
+          {/* Settings AI Button (Masterdev / Saymon) */}
+          {onOpenSettings && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenSettings}
+              className="h-9 px-2.5 text-xs font-bold border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+              title="Configurações da IA Gemini"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+              <span className="hidden md:inline">Configurar IA</span>
+            </Button>
+          )}
 
           {/* Add Property Button */}
           <Button
