@@ -10,6 +10,7 @@ import {
   Zap,
   ArrowLeftRight,
   ShieldCheck,
+  MapPin,
 } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
