@@ -22,11 +22,22 @@ import { PropertyFormValues } from '@/lib/schemas';
 import { useProperties } from '@/hooks/useProperties';
 import { Footer } from '@/components/Footer';
 
+// Format phone number with hyphen from right to left (ex: 98139-4841 ou 8139-4841)
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 9);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 8) {
+    return `${digits.slice(0, digits.length - 4)}-${digits.slice(digits.length - 4)}`;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
 export default function CorretorPortalPage() {
   const { addRealtorSuggestion, properties } = useProperties();
 
   const [nomeCorretor, setNomeCorretor] = useState('');
-  const [telefoneCorretor, setTelefoneCorretor] = useState('');
+  const [dddCorretor, setDddCorretor] = useState('');
+  const [numeroCorretor, setNumeroCorretor] = useState('');
   const [urlAnuncio, setUrlAnuncio] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<PropertyFormValues | null>(null);
@@ -37,17 +48,35 @@ export default function CorretorPortalPage() {
   const checkDuplicate = (url: string) => {
     if (!url.trim()) return null;
     const cleanUrl = url.trim().toLowerCase().replace(/\/$/, '');
-    return properties.find(
-      (p) => p.urlAnuncio && p.urlAnuncio.trim().toLowerCase().replace(/\/$/, '') === cleanUrl
-    ) || null;
+    return (
+      properties.find(
+        (p) => p.urlAnuncio && p.urlAnuncio.trim().toLowerCase().replace(/\/$/, '') === cleanUrl
+      ) || null
+    );
   };
 
   const handleExtractAndValidateWithUrl = async (targetUrl: string) => {
     if (!targetUrl.trim()) return;
 
+    // Friendly URL validation
+    const isValidUrl =
+      targetUrl.startsWith('http://') ||
+      targetUrl.startsWith('https://') ||
+      targetUrl.includes('vivareal.com.br') ||
+      targetUrl.includes('quintoandar.com.br') ||
+      targetUrl.includes('zapimoveis.com.br') ||
+      targetUrl.includes('b2m.com.br');
+
+    if (!isValidUrl) {
+      setErrorMsg('Verificamos que esse não é um endereço de site válido. Por favor, insira uma URL.');
+      return;
+    }
+
     const dup = checkDuplicate(targetUrl);
     if (dup) {
-      setDuplicateWarning(`⚠️ Link Repetido! Este imóvel já foi cadastrado para o casal como "${dup.titulo}" (${dup.bairro}).`);
+      setDuplicateWarning(
+        `⚠️ Link Repetido! Este imóvel já foi cadastrado para o casal como "${dup.titulo}" (${dup.bairro}).`
+      );
       return;
     }
 
@@ -57,21 +86,23 @@ export default function CorretorPortalPage() {
     setExtractedData(null);
 
     try {
+      const formattedUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
+
       const res = await fetch('/api/extract-property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl.trim() }),
+        body: JSON.stringify({ url: formattedUrl.trim() }),
       });
 
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Não foi possível ler o link do anúncio.');
+        throw new Error('Verificamos que esse não é um endereço de site válido. Por favor, insira uma URL.');
       }
 
       const d = json.data;
       const formVal: PropertyFormValues = {
         titulo: d.titulo || 'Apartamento Sugerido',
-        urlAnuncio: targetUrl.trim(),
+        urlAnuncio: formattedUrl.trim(),
         urlImagem: d.urlImagem || '',
         bairro: d.bairro || 'Vila Yara / Osasco',
         endereco: d.endereco || '',
@@ -90,10 +121,10 @@ export default function CorretorPortalPage() {
         diferenciais: d.diferenciais || [],
         status: 'Para Analisar',
 
-        notaSaymon: 4,
-        vereditoSaymon: 'Gostei',
-        notaKelly: 4,
-        vereditoKelly: 'Gostei',
+        notaSaymon: 5,
+        vereditoSaymon: 'Aprovado',
+        notaKelly: 5,
+        vereditoKelly: 'Aprovada',
 
         observacoes: d.observacoes || '',
         duvidasCorretor: d.duvidasCorretor || '',
@@ -101,7 +132,10 @@ export default function CorretorPortalPage() {
 
       setExtractedData(formVal);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao ler o anúncio. Cole outro link.');
+      setErrorMsg(
+        err.message ||
+          'Verificamos que esse não é um endereço de site válido. Por favor, insira uma URL.'
+      );
     } finally {
       setIsExtracting(false);
     }
@@ -111,16 +145,25 @@ export default function CorretorPortalPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nomeCorretor.trim() || !telefoneCorretor.trim()) {
-      setErrorMsg('Informe seu Nome e Telefone/WhatsApp.');
+    if (!nomeCorretor.trim()) {
+      setErrorMsg('Informe seu Nome / Imobiliária.');
+      return;
+    }
+    if (!dddCorretor.trim() || dddCorretor.length < 2) {
+      setErrorMsg('Informe o DDD (2 dígitos).');
+      return;
+    }
+    if (!numeroCorretor.trim() || numeroCorretor.replace(/\D/g, '').length < 8) {
+      setErrorMsg('Informe o número de celular válido.');
       return;
     }
     if (!extractedData) {
-      setErrorMsg('Cole o link e clique em Escanear antes de enviar.');
+      setErrorMsg('Cole o link e clique em Escanear Anúncio antes de enviar.');
       return;
     }
 
-    addRealtorSuggestion(extractedData, nomeCorretor, telefoneCorretor);
+    const fullPhone = `(${dddCorretor}) ${numeroCorretor}`;
+    addRealtorSuggestion(extractedData, nomeCorretor, fullPhone);
     setSubmittedSuccess(true);
   };
 
@@ -166,13 +209,13 @@ export default function CorretorPortalPage() {
         <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-6 sm:p-8 space-y-6">
           <div>
             <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-1">
-              Envio Rápido por IA 🤖
+              Envio Público Sem Login 🤖
             </span>
             <h2 className="text-xl font-black text-slate-900 dark:text-white">
               Sugerir Imóvel para o Casal
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Preencha seus dados de contato e cole o link do anúncio. Nossa Inteligência Artificial lerá o imóvel e apresentará direto na lista do Saymon & Kelly.
+              Preencha seu nome, DDD, celular e cole a URL do anúncio. Nossa Inteligência Artificial lerá o imóvel e o enviará diretamente para Saymon & Kelly.
             </p>
           </div>
 
@@ -206,36 +249,63 @@ export default function CorretorPortalPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
                   1. Seus Dados de Contato
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="nomeCorretor" className="text-xs font-semibold">
-                      Seu Nome / Imobiliária <span className="text-rose-500">*</span>
+                
+                {/* Nome */}
+                <div className="space-y-1">
+                  <Label htmlFor="nomeCorretor" className="text-xs font-semibold">
+                    Seu Nome / Imobiliária <span className="text-rose-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="nomeCorretor"
+                      placeholder="Ex: Carlos Silva (Imobiliária XYZ)"
+                      value={nomeCorretor}
+                      onChange={(e) => setNomeCorretor(e.target.value)}
+                      className="pl-9 text-xs"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* DDD e Número Separados */}
+                <div className="grid grid-cols-3 gap-3">
+                  {/* DDD */}
+                  <div className="space-y-1 col-span-1">
+                    <Label htmlFor="dddCorretor" className="text-xs font-semibold">
+                      DDD <span className="text-rose-500">*</span>
                     </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                      <Input
-                        id="nomeCorretor"
-                        placeholder="Ex: Carlos Silva (Imobiliária XYZ)"
-                        value={nomeCorretor}
-                        onChange={(e) => setNomeCorretor(e.target.value)}
-                        className="pl-9 text-xs"
-                        required
-                      />
-                    </div>
+                    <Input
+                      id="dddCorretor"
+                      placeholder="Ex: 11"
+                      maxLength={2}
+                      value={dddCorretor}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+                        setDddCorretor(val);
+                      }}
+                      className="text-xs text-center font-bold"
+                      required
+                    />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="telefoneCorretor" className="text-xs font-semibold">
-                      Seu Telefone / WhatsApp <span className="text-rose-500">*</span>
+                  {/* Número de Celular */}
+                  <div className="space-y-1 col-span-2">
+                    <Label htmlFor="numeroCorretor" className="text-xs font-semibold">
+                      Número Celular / WhatsApp <span className="text-rose-500">*</span>
                     </Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                       <Input
-                        id="telefoneCorretor"
-                        placeholder="Ex: (11) 98139-4841"
-                        value={telefoneCorretor}
-                        onChange={(e) => setTelefoneCorretor(e.target.value)}
-                        className="pl-9 text-xs"
+                        id="numeroCorretor"
+                        placeholder="Ex: 98139-4841"
+                        maxLength={10} // 9 digits + 1 hyphen
+                        value={numeroCorretor}
+                        onChange={(e) => {
+                          const formatted = formatPhoneNumber(e.target.value);
+                          setNumeroCorretor(formatted);
+                        }}
+                        className="pl-9 text-xs font-semibold"
                         required
                       />
                     </div>
@@ -246,19 +316,20 @@ export default function CorretorPortalPage() {
               {/* 2. Link Scanner */}
               <div className="space-y-2">
                 <Label htmlFor="urlAnuncio" className="text-xs font-semibold">
-                  2. Link do Imóvel (VivaReal, B2M, QuintoAndar, Zap, etc.) <span className="text-rose-500">*</span>
+                  2. Link do Imóvel (VivaReal, QuintoAndar, Zap, B2M, etc.) <span className="text-rose-500">*</span>
                 </Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <Input
                       id="urlAnuncio"
-                      type="url"
+                      type="text"
                       placeholder="https://www.vivareal.com.br/imovel/..."
                       value={urlAnuncio}
                       onChange={(e) => {
                         const url = e.target.value;
                         setUrlAnuncio(url);
+                        setErrorMsg(null);
                         const dup = checkDuplicate(url);
                         if (dup) {
                           setDuplicateWarning(`⚠️ Link Repetido! Este imóvel já foi cadastrado como "${dup.titulo}" (${dup.bairro}).`);
@@ -268,7 +339,7 @@ export default function CorretorPortalPage() {
                       }}
                       onPaste={(e) => {
                         const pastedUrl = e.clipboardData.getData('text');
-                        if (pastedUrl && (pastedUrl.startsWith('http://') || pastedUrl.startsWith('https://'))) {
+                        if (pastedUrl) {
                           setUrlAnuncio(pastedUrl);
                           handleExtractAndValidateWithUrl(pastedUrl);
                         }
@@ -296,7 +367,7 @@ export default function CorretorPortalPage() {
                 </div>
 
                 {duplicateWarning && (
-                  <p className="text-xs text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/60 p-2 rounded-lg border border-rose-200 dark:border-rose-800">
+                  <p className="text-xs text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/60 p-2.5 rounded-xl border border-rose-200 dark:border-rose-800">
                     {duplicateWarning}
                   </p>
                 )}
@@ -340,7 +411,9 @@ export default function CorretorPortalPage() {
               )}
 
               {errorMsg && (
-                <p className="text-xs text-rose-500 font-medium text-center">{errorMsg}</p>
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-600 font-bold text-center">
+                  {errorMsg}
+                </div>
               )}
 
               <Button

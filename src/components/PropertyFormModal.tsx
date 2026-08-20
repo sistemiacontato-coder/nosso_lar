@@ -17,9 +17,11 @@ import {
   Loader2,
   Wand2,
   Edit3,
+  Search,
+  MapPin,
 } from 'lucide-react';
 import { propertyFormSchema, PropertyFormValues } from '@/lib/schemas';
-import { Property, AVAILABLE_DIFFERENTIALS, getCoupleMatchBadge, VereditoSaymon, VereditoKelly } from '@/types/property';
+import { Property, AVAILABLE_DIFFERENTIALS, getCoupleMatchBadge } from '@/types/property';
 import { formatCurrency, formatCurrencyPerM2, calculateTotals } from '@/lib/utils';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
@@ -35,6 +37,41 @@ interface PropertyFormModalProps {
   existingProperties?: Property[];
 }
 
+// Clean blank values for brand new manual property registration
+const emptyDefaultValues: PropertyFormValues = {
+  titulo: '',
+  urlAnuncio: '',
+  urlImagem: '',
+  bairro: '',
+  endereco: '',
+  valorAluguel: '' as unknown as number,
+  valorCondominio: '' as unknown as number,
+  valorIptu: '' as unknown as number,
+  dormitorios: '' as unknown as number,
+  suites: '' as unknown as number,
+  banheiros: '' as unknown as number,
+  vagasGaragem: '' as unknown as number,
+  areaUtil: '' as unknown as number,
+  tempoAteTrabalhoMinutos: '' as unknown as number,
+  tempoSaymonMinutos: '' as unknown as number,
+  tempoKellyMinutos: '' as unknown as number,
+  distanciaMetroKm: '' as unknown as number,
+  diferenciais: [],
+  status: 'Para Analisar',
+
+  // Saymon
+  notaSaymon: 5,
+  vereditoSaymon: 'Aprovado',
+  opiniaoSaymon: '',
+
+  // Kelly
+  notaKelly: 5,
+  vereditoKelly: 'Aprovada',
+  opiniaoKelly: '',
+
+  observacoes: '',
+};
+
 export function PropertyFormModal({
   open,
   onOpenChange,
@@ -49,40 +86,8 @@ export function PropertyFormModal({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractSuccess, setExtractSuccess] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
-
-  const defaultValues: PropertyFormValues = {
-    titulo: '',
-    urlAnuncio: '',
-    urlImagem: '',
-    bairro: '',
-    endereco: '',
-    valorAluguel: 3600,
-    valorCondominio: 800,
-    valorIptu: 200,
-    dormitorios: 3,
-    suites: 1,
-    banheiros: 2,
-    vagasGaragem: 2,
-    areaUtil: 80,
-    tempoAteTrabalhoMinutos: 25,
-    tempoSaymonMinutos: 25,
-    tempoKellyMinutos: 30,
-    distanciaMetroKm: 1.5,
-    diferenciais: ['Varanda Gourmet', 'Portaria 24h / Blindada', 'Piscina', 'Academia'],
-    status: 'Para Analisar',
-
-    // Saymon
-    notaSaymon: 5,
-    vereditoSaymon: 'Aprovado',
-    opiniaoSaymon: '',
-
-    // Kelly
-    notaKelly: 5,
-    vereditoKelly: 'Aprovada',
-    opiniaoKelly: '',
-
-    observacoes: '',
-  };
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
   const {
     register,
@@ -93,7 +98,7 @@ export function PropertyFormModal({
     formState: { errors, isSubmitting },
   } = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
-    defaultValues,
+    defaultValues: emptyDefaultValues,
   });
 
   useEffect(() => {
@@ -101,6 +106,8 @@ export function PropertyFormModal({
       setExtractUrl('');
       setExtractError(null);
       setExtractSuccess(null);
+      setDuplicateWarning(null);
+      setAddressSuggestions([]);
       setEntryMode(isEditing ? 'manual' : 'scan');
 
       if (initialData) {
@@ -118,25 +125,28 @@ export function PropertyFormModal({
           banheiros: initialData.banheiros,
           vagasGaragem: initialData.vagasGaragem,
           areaUtil: initialData.areaUtil,
-          tempoAteTrabalhoMinutos: initialData.tempoAteTrabalhoMinutos,
-          distanciaMetroKm: initialData.distanciaMetroKm,
+          tempoAteTrabalhoMinutos: initialData.tempoAteTrabalhoMinutos || 25,
+          tempoSaymonMinutos: initialData.tempoSaymonMinutos || 20,
+          tempoKellyMinutos: initialData.tempoKellyMinutos || 30,
+          distanciaMetroKm: initialData.distanciaMetroKm || 1.5,
           diferenciais: initialData.diferenciais || [],
           status: initialData.status,
 
           // Saymon
-          notaSaymon: initialData.notaSaymon || 4,
-          vereditoSaymon: initialData.vereditoSaymon || 'Gostei',
+          notaSaymon: initialData.notaSaymon || 5,
+          vereditoSaymon: initialData.vereditoSaymon || 'Aprovado',
           opiniaoSaymon: initialData.opiniaoSaymon || '',
 
           // Kelly
-          notaKelly: initialData.notaKelly || 4,
-          vereditoKelly: initialData.vereditoKelly || 'Gostei',
+          notaKelly: initialData.notaKelly || 5,
+          vereditoKelly: initialData.vereditoKelly || 'Aprovada',
           opiniaoKelly: initialData.opiniaoKelly || '',
 
           observacoes: initialData.observacoes || '',
         });
       } else {
-        reset(defaultValues);
+        // Completely blank for new property registration
+        reset(emptyDefaultValues);
       }
     }
   }, [open, initialData, reset, isEditing]);
@@ -154,7 +164,7 @@ export function PropertyFormModal({
   // Magic Auto Extract Handler
   const handleAutoExtractWithUrl = async (targetUrl: string) => {
     if (!targetUrl.trim()) return;
-    
+
     // Validate duplicate first
     const dup = checkDuplicateUrl(targetUrl);
     if (dup) {
@@ -208,26 +218,70 @@ export function PropertyFormModal({
 
   const handleAutoExtract = () => handleAutoExtractWithUrl(extractUrl);
 
+  // Address lookup helper (OpenStreetMap Nominatim API for address suggestions & commute calculation)
+  const handleAddressSearch = async (query: string) => {
+    if (!query || query.length < 3) return;
+    setIsSearchingAddress(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query + ', São Paulo Brasil'
+        )}&limit=4`
+      );
+      const data = await res.json();
+      setAddressSuggestions(data || []);
+    } catch {
+      setAddressSuggestions([]);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  // Recalculate commute based on address / location selection
+  const handleSelectAddressSuggestion = (item: any) => {
+    const display = item.display_name.split(',')[0] || item.display_name;
+    setValue('endereco', display, { shouldValidate: true });
+    setAddressSuggestions([]);
+
+    // Recalculate commute times dynamically based on distance estimation
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+
+    // Approximate reference points (Saymon Work & Kelly Work)
+    // Saymon Paulista approx: -23.56, -46.65
+    // Kelly Faria Lima approx: -23.58, -46.68
+    if (lat && lon) {
+      const saymonDist = Math.hypot(lat - (-23.561), lon - (-46.655)) * 111; // km
+      const kellyDist = Math.hypot(lat - (-23.582), lon - (-46.681)) * 111; // km
+
+      const saymonMin = Math.max(10, Math.round(saymonDist * 3.2));
+      const kellyMin = Math.max(10, Math.round(kellyDist * 3.5));
+      const avgMin = Math.round((saymonMin + kellyMin) / 2);
+
+      setValue('tempoSaymonMinutos', saymonMin);
+      setValue('tempoKellyMinutos', kellyMin);
+      setValue('tempoAteTrabalhoMinutos', avgMin);
+    }
+  };
+
   // Watch for live total calculation
-  const watchedAluguel = watch('valorAluguel') || 0;
-  const watchedCondominio = watch('valorCondominio') || 0;
-  const watchedIptu = watch('valorIptu') || 0;
-  const watchedArea = watch('areaUtil') || 1;
+  const watchedAluguel = Number(watch('valorAluguel')) || 0;
+  const watchedCondominio = Number(watch('valorCondominio')) || 0;
+  const watchedIptu = Number(watch('valorIptu')) || 0;
+  const watchedArea = Number(watch('areaUtil')) || 1;
   const watchedDiferenciais = watch('diferenciais') || [];
-  const watchedNotaSaymon = watch('notaSaymon') || 4;
-  const watchedVereditoSaymon = watch('vereditoSaymon') || 'Gostei';
-  const watchedNotaKelly = watch('notaKelly') || 4;
-  const watchedVereditoKelly = watch('vereditoKelly') || 'Gostei';
+  const watchedNotaSaymon = Number(watch('notaSaymon')) || 5;
+  const watchedNotaKelly = Number(watch('notaKelly')) || 5;
+  const watchedEndereco = watch('endereco') || '';
 
   const { custoTotal, precoM2 } = calculateTotals(
-    Number(watchedAluguel),
-    Number(watchedCondominio),
-    Number(watchedIptu),
-    Number(watchedArea)
+    watchedAluguel,
+    watchedCondominio,
+    watchedIptu,
+    watchedArea
   );
 
   const coupleMedia = Number(((watchedNotaSaymon + watchedNotaKelly) / 2).toFixed(1));
-  const coupleMatchBadge = getCoupleMatchBadge(watchedNotaSaymon, watchedNotaKelly);
 
   const handleToggleTag = (tag: string) => {
     const current = watchedDiferenciais;
@@ -243,7 +297,23 @@ export function PropertyFormModal({
   };
 
   const handleFormSubmit = (data: PropertyFormValues) => {
-    onSubmit(data);
+    // If commute fields are blank, provide default estimates
+    const finalData = {
+      ...data,
+      tempoSaymonMinutos: Number(data.tempoSaymonMinutos) || 25,
+      tempoKellyMinutos: Number(data.tempoKellyMinutos) || 30,
+      tempoAteTrabalhoMinutos: Number(data.tempoAteTrabalhoMinutos) || 25,
+      valorAluguel: Number(data.valorAluguel) || 0,
+      valorCondominio: Number(data.valorCondominio) || 0,
+      valorIptu: Number(data.valorIptu) || 0,
+      areaUtil: Number(data.areaUtil) || 1,
+      dormitorios: Number(data.dormitorios) || 0,
+      suites: Number(data.suites) || 0,
+      banheiros: Number(data.banheiros) || 1,
+      vagasGaragem: Number(data.vagasGaragem) || 0,
+    };
+
+    onSubmit(finalData);
     onOpenChange(false);
   };
 
@@ -257,55 +327,58 @@ export function PropertyFormModal({
         <DialogDescription>
           {isEditing
             ? 'Atualize os valores, foto real e pontos de vista de Saymon & Kelly.'
-            : 'Escolha se deseja escanear automaticamente o link do anúncio ou cadastrar manualmente.'}
+            : 'Escolha o método de cadastro desejado para adicionar um novo imóvel.'}
         </DialogDescription>
       </DialogHeader>
 
-      {/* MODE SWITCHER (ESCANEAR LINK VS DIGITAR MANUALMENTE) */}
+      {/* MODE SWITCHER (APENAS 2 OPÇÕES ESTRITAS) */}
       {!isEditing && (
-        <div className="mb-4 grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+        <div className="mb-4 grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
           <button
             type="button"
             onClick={() => setEntryMode('scan')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all ${
               entryMode === 'scan'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md border border-slate-200 dark:border-slate-700'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
             <Wand2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            Escanear por Link (Recomendado)
+            Extração Automática por Link
           </button>
 
           <button
             type="button"
-            onClick={() => setEntryMode('manual')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => {
+              setEntryMode('manual');
+              reset(emptyDefaultValues); // Ensure completely blank form when switching to manual
+            }}
+            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all ${
               entryMode === 'manual'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-md border border-slate-200 dark:border-slate-700'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
-            <Edit3 className="h-4 w-4" />
+            <Edit3 className="h-4 w-4 text-rose-500" />
             Cadastrar Manualmente
           </button>
         </div>
       )}
 
-      {/* COMPACT ESCANEAR BOX WHEN IN SCAN MODE */}
+      {/* BANNER DE EXTRAÇÃO AUTOMÁTICA (APARECE APENAS NO MODO SCAN) */}
       {!isEditing && entryMode === 'scan' && (
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-0.5 shadow-md">
           <div className="rounded-[14px] bg-white dark:bg-slate-900 p-4">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" /> Extração Automática de Foto Real e Dados
+                <Sparkles className="h-3.5 w-3.5" /> Cole a URL do Anúncio
               </span>
-              <span className="text-[10px] font-semibold text-slate-400">VivaReal, B2M, Vanderleia, QuintoAndar, Zap</span>
+              <span className="text-[10px] font-semibold text-slate-400">VivaReal, QuintoAndar, Zap, B2M</span>
             </div>
 
             <div className="flex gap-2">
               <Input
-                placeholder="Cole a URL do imóvel (ex: https://www.vivareal.com.br/imovel/...)"
+                placeholder="Ex: https://www.vivareal.com.br/imovel/..."
                 value={extractUrl}
                 onChange={(e) => {
                   const url = e.target.value;
@@ -393,7 +466,7 @@ export function PropertyFormModal({
             </div>
 
             <div className="rounded-xl bg-white dark:bg-slate-900 px-3 py-1.5 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
-              <span className="text-[10px] text-slate-400 uppercase font-medium block">Sintonia do Casal</span>
+              <span className="text-[10px] text-slate-400 uppercase font-medium block">Média do Casal</span>
               <span className="font-bold text-rose-600 dark:text-rose-400 text-sm flex items-center gap-1 justify-center">
                 <Heart className="h-3 w-3 fill-rose-500" /> {coupleMedia} ⭐
               </span>
@@ -403,10 +476,10 @@ export function PropertyFormModal({
       </div>
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        {/* SECTION 1: INFORMAÇÕES BÁSICAS & LINKS */}
+        {/* SECTION 1: INFORMAÇÕES BÁSICAS & ENDEREÇO */}
         <div className="space-y-4">
           <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-            <LinkIcon className="h-3.5 w-3.5" /> 1. Informações Básicas e Anúncio
+            <LinkIcon className="h-3.5 w-3.5" /> 1. Informações Básicas e Endereço
           </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -428,11 +501,11 @@ export function PropertyFormModal({
             {/* URL do Anúncio */}
             <div className="space-y-1.5">
               <Label htmlFor="urlAnuncio">
-                Link do Anúncio (B2M, VivaReal, QuintoAndar, etc.) <span className="text-rose-500">*</span>
+                Link do Anúncio (VivaReal, QuintoAndar, Zap, etc.) <span className="text-rose-500">*</span>
               </Label>
               <Input
                 id="urlAnuncio"
-                type="url"
+                type="text"
                 placeholder="https://www.vivareal.com.br/imovel/..."
                 {...register('urlAnuncio')}
               />
@@ -443,10 +516,10 @@ export function PropertyFormModal({
 
             {/* URL da Foto de Capa */}
             <div className="space-y-1.5">
-              <Label htmlFor="urlImagem">Link da Foto Real da Fachada / Sala (opcional)</Label>
+              <Label htmlFor="urlImagem">Link da Foto Real (opcional)</Label>
               <Input
                 id="urlImagem"
-                type="url"
+                type="text"
                 placeholder="https://... URL direta da foto real"
                 {...register('urlImagem')}
               />
@@ -459,7 +532,7 @@ export function PropertyFormModal({
               </Label>
               <Input
                 id="bairro"
-                placeholder="Ex: Vila Yara / Continental - Osasco, Vila São Francisco"
+                placeholder="Ex: Vila Yara / Continental - Osasco"
                 {...register('bairro')}
               />
               {errors.bairro && (
@@ -467,14 +540,43 @@ export function PropertyFormModal({
               )}
             </div>
 
-            {/* Endereço / Rua */}
-            <div className="space-y-1.5">
-              <Label htmlFor="endereco">Endereço / Referência (opcional)</Label>
-              <Input
-                id="endereco"
-                placeholder="Ex: Av. Franz Voegeli / Próximo ao Continental Shopping"
-                {...register('endereco')}
-              />
+            {/* Endereço com Busca Automática Google / Nominatim */}
+            <div className="space-y-1.5 relative">
+              <Label htmlFor="endereco" className="flex items-center justify-between">
+                <span>Endereço Completo (Autopreencher)</span>
+                <span className="text-[10px] text-indigo-500 font-semibold">📍 Recalcula Deslocamento</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="endereco"
+                  placeholder="Digite a rua ou condomínio (ex: Av. Franz Voegeli)..."
+                  {...register('endereco')}
+                  onChange={(e) => {
+                    setValue('endereco', e.target.value);
+                    handleAddressSearch(e.target.value);
+                  }}
+                />
+                {isSearchingAddress && (
+                  <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-slate-400" />
+                )}
+              </div>
+
+              {/* Suggestions Dropdown */}
+              {addressSuggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl py-1 text-xs">
+                  {addressSuggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectAddressSuggestion(item)}
+                      className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+                    >
+                      <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" />
+                      <span className="truncate">{item.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -555,13 +657,12 @@ export function PropertyFormModal({
 
             {/* Quartos */}
             <div className="space-y-1.5">
-              <Label htmlFor="dormitorios">
-                Dormitórios <span className="text-rose-500">*</span>
-              </Label>
+              <Label htmlFor="dormitorios">Dormitórios</Label>
               <Input
                 id="dormitorios"
                 type="number"
                 min="0"
+                placeholder="Ex: 3"
                 {...register('dormitorios')}
               />
             </div>
@@ -573,19 +674,19 @@ export function PropertyFormModal({
                 id="suites"
                 type="number"
                 min="0"
+                placeholder="Ex: 1"
                 {...register('suites')}
               />
             </div>
 
             {/* Banheiros */}
             <div className="space-y-1.5">
-              <Label htmlFor="banheiros">
-                Banheiros <span className="text-rose-500">*</span>
-              </Label>
+              <Label htmlFor="banheiros">Banheiros</Label>
               <Input
                 id="banheiros"
                 type="number"
                 min="1"
+                placeholder="Ex: 2"
                 {...register('banheiros')}
               />
             </div>
@@ -597,26 +698,28 @@ export function PropertyFormModal({
                 id="vagasGaragem"
                 type="number"
                 min="0"
+                placeholder="Ex: 2"
                 {...register('vagasGaragem')}
               />
             </div>
           </div>
         </div>
 
-        {/* SECTION 4: LOGÍSTICA & DESLOCAMENTO */}
+        {/* SECTION 4: TEMPO DE DESLOCAMENTO INDIVIDUAL DO CASAL */}
         <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> 4. Logística e Deslocamento
+          <h4 className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> 4. Deslocamento do Casal (Minutos até o Trabalho)
           </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="tempoSaymonMinutos">
-                Trabalho do Saymon 🧔 (minutos)
+                Trabalho do Saymon 🧑🏻‍🦱 (em minutos)
               </Label>
               <Input
                 id="tempoSaymonMinutos"
                 type="number"
+                min="0"
                 placeholder="Ex: 20"
                 {...register('tempoSaymonMinutos')}
               />
@@ -624,51 +727,39 @@ export function PropertyFormModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="tempoKellyMinutos">
-                Trabalho da Kelly 👩 (minutos)
+                Trabalho da Kelly 👩🏻‍🦱 (em minutos)
               </Label>
               <Input
                 id="tempoKellyMinutos"
                 type="number"
+                min="0"
                 placeholder="Ex: 30"
                 {...register('tempoKellyMinutos')}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="distanciaMetroKm">
-                Distância até Metrô / Trem 🚉 (km)
-              </Label>
-              <Input
-                id="distanciaMetroKm"
-                type="number"
-                step="0.1"
-                placeholder="Ex: 1.5"
-                {...register('distanciaMetroKm')}
               />
             </div>
           </div>
         </div>
 
-        {/* SECTION 5: DIFERENCIAIS & COMODIDADES */}
+        {/* SECTION 5: DIFERENCIAIS */}
         <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <Label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-            5. Diferenciais e Comodidades (selecione as presentes)
+          <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            5. Diferenciais e Lazer do Condomínio
           </Label>
-          <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-wrap gap-2">
             {AVAILABLE_DIFFERENTIALS.map((tag) => {
-              const isSelected = watchedDiferenciais.includes(tag);
+              const active = watchedDiferenciais.includes(tag);
               return (
                 <button
-                  type="button"
                   key={tag}
+                  type="button"
                   onClick={() => handleToggleTag(tag)}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                    isSelected
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                      : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    active
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                   }`}
                 >
-                  {isSelected && <Check className="h-3 w-3" />}
+                  {active && <Check className="h-3.5 w-3.5" />}
                   {tag}
                 </button>
               );
@@ -676,226 +767,143 @@ export function PropertyFormModal({
           </div>
         </div>
 
-        {/* SECTION 6: PONTOS DE VISTA DO CASAL: SAYMON & KELLY */}
-        <div className="space-y-4 pt-4 border-t-2 border-rose-200 dark:border-rose-900/50 bg-rose-50/20 dark:bg-rose-950/10 p-4 rounded-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-rose-200/60 dark:border-rose-900/40">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 fill-rose-500 text-rose-500" />
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                6. Avaliação do Casal: Saymon & Kelly
-              </h4>
-            </div>
-            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${coupleMatchBadge.bg} ${coupleMatchBadge.border} ${coupleMatchBadge.color}`}>
-              {coupleMatchBadge.label} ({coupleMedia} / 5)
-            </span>
-          </div>
+        {/* SECTION 6: AVALIAÇÃO DO CASAL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+          {/* SAYMON */}
+          <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+            <h5 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+              <span>🧑🏻‍| Saymon</span>
+            </h5>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* SAYMON REVIEW CARD */}
-            <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 font-bold text-xs">
-                    🧔 S
-                  </div>
-                  <div>
-                    <span className="font-bold text-sm text-slate-900 dark:text-white block">
-                      Saymon
-                    </span>
-                    <span className="text-[10px] text-slate-400">Ponto de Vista</span>
-                  </div>
-                </div>
-
-                {/* Rating Saymon */}
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setValue('notaSaymon', star, { shouldValidate: true })}
-                      className="p-0.5"
-                    >
-                      <Star
-                        className={`h-5 w-5 transition-transform active:scale-125 ${
-                          star <= watchedNotaSaymon
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-200 dark:text-slate-700'
-                        }`}
-                      />
-                    </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="notaSaymon">Nota (1 a 5 stars)</Label>
+                <select
+                  id="notaSaymon"
+                  {...register('notaSaymon')}
+                  className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>
+                      ⭐ {n}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
-              {/* Veredito Saymon */}
-              <div>
-                <Label className="text-xs mb-1 block">Veredito do Saymon:</Label>
-                <div className="grid grid-cols-4 gap-1">
-                  {(['Aprovado', 'Gostei', 'Neutro', 'Não Curti'] as VereditoSaymon[]).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setValue('vereditoSaymon', v, { shouldValidate: true })}
-                      className={`py-1 text-[11px] font-semibold rounded-lg border transition-all ${
-                        watchedVereditoSaymon === v
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Opinião Saymon */}
-              <div>
-                <Label htmlFor="opiniaoSaymon" className="text-xs mb-1 block">
-                  Comentários / Prós & Contras do Saymon:
-                </Label>
-                <Textarea
-                  id="opiniaoSaymon"
-                  rows={2}
-                  placeholder="Ex: O que o Saymon achou da vaga, metragem, localização, custos..."
-                  {...register('opiniaoSaymon')}
-                />
+              <div className="space-y-1">
+                <Label htmlFor="vereditoSaymon">Veredito</Label>
+                <select
+                  id="vereditoSaymon"
+                  {...register('vereditoSaymon')}
+                  className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  <option value="Aprovado">😍 Aprovado</option>
+                  <option value="Gostei">👍 Gostei</option>
+                  <option value="Neutro">😐 Neutro</option>
+                  <option value="Não Curti">👎 Não Curti</option>
+                </select>
               </div>
             </div>
 
-            {/* KELLY REVIEW CARD */}
-            <div className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900 text-rose-200 font-bold text-xs">
-                    👩 K
-                  </div>
-                  <div>
-                    <span className="font-bold text-sm text-slate-900 dark:text-white block">
-                      Kelly
-                    </span>
-                    <span className="text-[10px] text-slate-400">Ponto de Vista</span>
-                  </div>
-                </div>
-
-                {/* Rating Kelly */}
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setValue('notaKelly', star, { shouldValidate: true })}
-                      className="p-0.5"
-                    >
-                      <Star
-                        className={`h-5 w-5 transition-transform active:scale-125 ${
-                          star <= watchedNotaKelly
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-200 dark:text-slate-700'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Veredito Kelly */}
-              <div>
-                <Label className="text-xs mb-1 block">Veredito da Kelly:</Label>
-                <div className="grid grid-cols-4 gap-1">
-                  {(['Aprovada', 'Gostei', 'Neutra', 'Não Curti'] as VereditoKelly[]).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setValue('vereditoKelly', v, { shouldValidate: true })}
-                      className={`py-1 text-[11px] font-semibold rounded-lg border transition-all ${
-                        watchedVereditoKelly === v
-                          ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Opinião Kelly */}
-              <div>
-                <Label htmlFor="opiniaoKelly" className="text-xs mb-1 block">
-                  Comentários / Prós & Contras da Kelly:
-                </Label>
-                <Textarea
-                  id="opiniaoKelly"
-                  rows={2}
-                  placeholder="Ex: O que a Kelly achou da cozinha, varanda, segurança, iluminação..."
-                  {...register('opiniaoKelly')}
-                />
-              </div>
+            <div className="space-y-1">
+              <Label htmlFor="opiniaoSaymon">Opinião / Observações do Saymon</Label>
+              <Textarea
+                id="opiniaoSaymon"
+                rows={2}
+                placeholder="Ex: Ótima sacada e vaga livre. Gostei da planta..."
+                {...register('opiniaoSaymon')}
+                className="text-xs"
+              />
             </div>
           </div>
-        </div>
 
-        {/* SECTION 7: DÚVIDAS PARA O CORRETOR */}
-        <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              7. Dúvidas & Perguntas para Fazer ao Corretor
-            </h4>
-          </div>
-          <Textarea
-            id="duvidasCorretor"
-            rows={3}
-            placeholder="Ex: 1. A vaga de garagem é livre ou presa? 2. Qual a garantia aceita? 3. O condomínio inclui água/gás?"
-            {...register('duvidasCorretor')}
-          />
-          <p className="text-[11px] text-slate-400">
-            Dica: Anote suas dúvidas aqui. Na ficha do imóvel haverá um botão para <strong>copiar direto para o WhatsApp do corretor</strong>!
-          </p>
-        </div>
+          {/* KELLY */}
+          <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-3">
+            <h5 className="text-xs font-extrabold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+              <span>👩🏻‍🦱 Kelly</span>
+            </h5>
 
-        {/* SECTION 8: STATUS GERAL */}
-        <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="status">Status no Funil de Decisão</Label>
-              <select
-                id="status"
-                {...register('status')}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
-              >
-                <option value="Para Analisar">Para Analisar</option>
-                <option value="Agendar Visita">Agendar Visita</option>
-                <option value="Visita Agendada">Visita Agendada</option>
-                <option value="Pendente Avaliação">Pendente Avaliação</option>
-                <option value="Proposta Enviada">Proposta Enviada</option>
-                <option value="Descartado">Descartado</option>
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="notaKelly">Nota (1 a 5 stars)</Label>
+                <select
+                  id="notaKelly"
+                  {...register('notaKelly')}
+                  className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>
+                      ⭐ {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="vereditoKelly">Veredito</Label>
+                <select
+                  id="vereditoKelly"
+                  {...register('vereditoKelly')}
+                  className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  <option value="Aprovada">😍 Aprovada</option>
+                  <option value="Gostei">👍 Gostei</option>
+                  <option value="Neutra">😐 Neutra</option>
+                  <option value="Não Curti">👎 Não Curti</option>
+                </select>
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="observacoes">Observações Gerais / Código do Anúncio</Label>
-              <Input
-                id="observacoes"
-                placeholder="Ex: Código AP3464-B2MC, ligar para corretor..."
-                {...register('observacoes')}
+            <div className="space-y-1">
+              <Label htmlFor="opiniaoKelly">Opinião / Observações da Kelly</Label>
+              <Textarea
+                id="opiniaoKelly"
+                rows={2}
+                placeholder="Ex: Cozinha excelente, sol da manhã no quarto..."
+                {...register('opiniaoKelly')}
+                className="text-xs"
               />
             </div>
           </div>
         </div>
 
-        {/* Modal Footer Buttons */}
+        {/* SECTION 7: OBSERVAÇÕES GERAIS */}
+        <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <Label htmlFor="observacoes">Anotações Gerais do Casal</Label>
+          <Textarea
+            id="observacoes"
+            rows={2}
+            placeholder="Anotações gerais sobre proprietário, vistoria ou detalhes..."
+            {...register('observacoes')}
+            className="text-xs"
+          />
+        </div>
+
         <DialogFooter>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
+            className="text-xs"
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isEditing ? 'Salvar Alterações' : 'Cadastrar Imóvel'}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                Salvando...
+              </>
+            ) : isEditing ? (
+              'Salvar Alterações'
+            ) : (
+              'Cadastrar Imóvel'
+            )}
           </Button>
         </DialogFooter>
       </form>

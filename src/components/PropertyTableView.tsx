@@ -15,73 +15,52 @@ import {
   ChevronUp,
   MessageSquare,
   MoreVertical,
+  ExternalLink,
+  MapPin,
+  Car,
+  Heart,
   Archive,
-  Compass,
-  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
-import { Property, PropertyStatus, STATUS_CONFIG } from '@/types/property';
-import { Button } from './ui/button';
+import { Property, STATUS_CONFIG, getCoupleMatchBadge } from '@/types/property';
+import { formatCurrency, formatCurrencyPerM2 } from '@/lib/utils';
 import { PropertyCommentsModal } from './PropertyCommentsModal';
 
 interface PropertyTableViewProps {
   properties: Property[];
-  selectedForComparison: string[];
-  onToggleCompare: (id: string) => void;
   onSelectDetails: (property: Property) => void;
   onEdit: (property: Property) => void;
   onDelete: (id: string) => void;
+  selectedForComparison: string[];
+  onToggleCompare: (id: string) => void;
   onQuickUpdateProperty: (id: string, updates: Partial<Property>) => void;
-  onStatusChange: (id: string, status: PropertyStatus) => void;
-  onToggleFavorite?: (id: string) => void;
-  onApproveSuggestion?: (id: string) => void;
-  onOpenRealtorModal?: () => void;
-  onOpenCommuteAnchorsModal?: () => void;
   onToggleArchive?: (id: string) => void;
 }
 
 export function PropertyTableView({
   properties,
-  selectedForComparison,
-  onToggleCompare,
   onSelectDetails,
   onEdit,
   onDelete,
+  selectedForComparison,
+  onToggleCompare,
   onQuickUpdateProperty,
-  onStatusChange,
-  onApproveSuggestion,
-  onOpenRealtorModal,
-  onOpenCommuteAnchorsModal,
   onToggleArchive,
 }: PropertyTableViewProps) {
   const [activeTab, setActiveTab] = useState<'nossos' | 'sugestao' | 'arquivados'>('nossos');
   const [commentsModalProp, setCommentsModalProp] = useState<Property | null>(null);
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
-  // Sub-menu filtering
-  const nossosImoveis = properties.filter((p) => !p.isSugestao && !p.isArquivado);
-  const sugestoesCorretores = properties.filter((p) => p.isSugestao && !p.isArquivado);
-  const arquivados = properties.filter((p) => p.isArquivado);
+  // Filter properties by active tab
+  const currentList = properties.filter((p) => {
+    if (activeTab === 'sugestao') return p.isSugestao && !p.isArquivado;
+    if (activeTab === 'arquivados') return p.isArquivado;
+    return !p.isSugestao && !p.isArquivado;
+  });
 
-  const currentList =
-    activeTab === 'nossos'
-      ? nossosImoveis
-      : activeTab === 'sugestao'
-      ? sugestoesCorretores
-      : arquivados;
-
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 0,
-    }).format(val);
-
-  const formatCurrencyPerM2 = (val: number) =>
-    new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      maximumFractionDigits: 1,
-    }).format(val) + '/m²';
+  const nossosCount = properties.filter((p) => !p.isSugestao && !p.isArquivado).length;
+  const sugestaoCount = properties.filter((p) => p.isSugestao && !p.isArquivado).length;
+  const arquivadosCount = properties.filter((p) => p.isArquivado).length;
 
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-xl overflow-hidden">
@@ -98,8 +77,8 @@ export function PropertyTableView({
             }`}
           >
             <span>🏠 Nossos Imóveis</span>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold">
-              {nossosImoveis.length}
+            <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px]">
+              {nossosCount}
             </span>
           </button>
 
@@ -113,11 +92,9 @@ export function PropertyTableView({
             }`}
           >
             <span>💡 Sugestões dos Corretores</span>
-            {sugestoesCorretores.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-extrabold animate-pulse">
-                {sugestoesCorretores.length}
-              </span>
-            )}
+            <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px]">
+              {sugestaoCount}
+            </span>
           </button>
 
           <button
@@ -125,51 +102,31 @@ export function PropertyTableView({
             onClick={() => setActiveTab('arquivados')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'arquivados'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
             }`}
           >
             <span>📦 Arquivados</span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-extrabold">
-              {arquivados.length}
+            <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px]">
+              {arquivadosCount}
             </span>
           </button>
         </div>
 
-        {/* Action Controls: Pontos de Deslocamento e Modo Corretor */}
-        <div className="flex items-center gap-2">
-          {onOpenCommuteAnchorsModal && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenCommuteAnchorsModal}
-              className="h-8.5 text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50"
-            >
-              <Compass className="mr-1.5 h-3.5 w-3.5 text-indigo-600" /> 📍 Pontos de Deslocamento
-            </Button>
-          )}
-
-          {onOpenRealtorModal && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onOpenRealtorModal}
-              className="h-8.5 text-xs font-bold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100"
-            >
-              👔 Modo Corretor (Enviar Imóvel)
-            </Button>
-          )}
-        </div>
+        {selectedForComparison.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300">
+            <span>{selectedForComparison.length} imóveis selecionados para comparação</span>
+          </div>
+        )}
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Table Container with minimum height so dropdown menus never get cut off */}
+      <div className="overflow-x-auto min-h-[360px] pb-16">
         <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
           {/* Header */}
-          <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800/80 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-100/80 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800/90 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th className="py-3 px-3 w-10 text-center whitespace-nowrap" title="Comparar imóveis lado a lado">
+              <th className="py-3 px-3 w-10 text-center whitespace-nowrap" title="Comparar imóveis">
                 Comp.
               </th>
               <th className="py-3 px-3 w-12 text-center whitespace-nowrap" title="Foto do Imóvel">
@@ -184,24 +141,37 @@ export function PropertyTableView({
               <th className="py-3 px-3 whitespace-nowrap" title="Pacote Mensal Total (Aluguel + Condomínio + IPTU)">
                 Custo Total
               </th>
-              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Área Útil (m²) e Valor por m² (R$/m²)">
-                Área ℹ️
+              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Área Útil (m²) e Valor por m²">
+                Área
               </th>
-              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Dormitórios, Suítes e Vagas de Garagem">
-                Cômodos ℹ️
-              </th>
-
-              {/* Ultra-Compact Emoji Headers (Homme & Femme Moreno) */}
-              <th className="py-3 px-[10px] w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" title="Saymon (Homem de Cabelo Escuro) - Clique para alterar nota">
-                🧑🏻‍🦱
-              </th>
-              <th className="py-3 px-[10px] w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" title="Kelly (Mulher de Cabelo Escuro) - Clique para alterar nota">
-                👩🏻‍🦱
+              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Dormitórios, Suítes e Vagas">
+                Cômodos
               </th>
 
-              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Tempo de Deslocamento de Saymon (🧑🏻‍🦱), Kelly (👩🏻‍🦱) e Média do Casal (💑)">
-                Deslocamento 🚗
+              {/* Menino Moreno Emoji (Saymon) */}
+              <th
+                className="py-3 px-2 w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
+                title="Saymon"
+              >
+                <span className="text-base" role="img" aria-label="Saymon">🧑🏻‍🦱</span>
               </th>
+
+              {/* Mulher Morena Emoji (Kelly) */}
+              <th
+                className="py-3 px-2 w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
+                title="Kelly"
+              >
+                <span className="text-base" role="img" aria-label="Kelly">👩🏻‍🦱</span>
+              </th>
+
+              {/* Deslocamento Header (Sem ? ou emoji polutuado) */}
+              <th
+                className="py-3 px-3 whitespace-nowrap cursor-help"
+                title="Tempo de Deslocamento do Casal (Saymon, Kelly e Média)"
+              >
+                Deslocamento
+              </th>
+
               <th className="py-3 px-3 w-28 text-right whitespace-nowrap">
                 Ações
               </th>
@@ -211,19 +181,20 @@ export function PropertyTableView({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {currentList.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-12 text-center text-slate-400 text-xs">
+                <td colSpan={11} className="py-16 text-center text-slate-400 text-xs">
                   {activeTab === 'nossos'
                     ? 'Nenhum imóvel cadastrado nesta lista.'
                     : activeTab === 'sugestao'
-                    ? 'Nenhuma sugestão enviada por corretores no momento. Clique em "Modo Corretor" para enviar!'
+                    ? 'Nenhuma sugestão enviada por corretores no momento.'
                     : 'Nenhum imóvel arquivado.'}
                 </td>
               </tr>
             ) : (
-              currentList.map((prop) => {
+              currentList.map((prop, idx) => {
                 const isSelected = selectedForComparison.includes(prop.id);
                 const statusCfg = STATUS_CONFIG[prop.status] || STATUS_CONFIG['Para Analisar'];
                 const isMenuOpen = openActionMenuId === prop.id;
+                const isLastRow = idx >= currentList.length - 2 && currentList.length > 2;
 
                 return (
                   <tr
@@ -237,105 +208,128 @@ export function PropertyTableView({
                       <button
                         type="button"
                         onClick={() => onToggleCompare(prop.id)}
-                        className="text-slate-400 hover:text-blue-600 transition-colors inline-flex"
+                        className="text-slate-400 hover:text-indigo-600 transition-colors inline-flex"
                         title={isSelected ? 'Remover da comparação' : 'Comparar'}
                       >
                         {isSelected ? (
-                          <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <CheckSquare className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         ) : (
                           <Square className="h-4 w-4" />
                         )}
                       </button>
                     </td>
 
-                    {/* Thumbnail */}
+                    {/* Foto Thumb */}
                     <td className="py-3 px-3 text-center">
-                      <div className="relative h-10 w-12 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 mx-auto shadow-sm">
+                      <div className="relative h-11 w-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mx-auto group">
                         {prop.urlImagem ? (
                           <Image
                             src={prop.urlImagem}
                             alt={prop.titulo}
                             fill
-                            className="object-cover"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            unoptimized
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-slate-400">
-                            <Building className="h-4 w-4" />
+                          <div className="flex h-full w-full items-center justify-center text-slate-400">
+                            <Building className="h-5 w-5" />
                           </div>
                         )}
                       </div>
                     </td>
 
-                    {/* Title & Neighborhood */}
-                    <td className="py-3 px-3 max-w-[180px]">
-                      <div
-                        onClick={() => onSelectDetails(prop)}
-                        className="font-bold text-slate-900 dark:text-white truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 text-xs"
-                        title={prop.titulo}
-                      >
-                        {prop.titulo}
+                    {/* Título & Bairro */}
+                    <td className="py-3 px-3">
+                      <div className="max-w-[220px]">
+                        <button
+                          type="button"
+                          onClick={() => onSelectDetails(prop)}
+                          className="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left line-clamp-1 transition-colors"
+                          title={prop.titulo}
+                        >
+                          {prop.titulo}
+                        </button>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
+                          <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
+                          <span className="truncate">{prop.bairro}</span>
+                          {prop.urlAnuncio && (
+                            <a
+                              href={prop.urlAnuncio}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-indigo-500 hover:text-indigo-700 shrink-0 ml-1"
+                              title="Abrir anúncio original"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
-                        <span>{prop.bairro}</span>
-                        {prop.isSugestao && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700">
-                            Corretor
-                          </span>
+                    </td>
+
+                    {/* Status Dropdown */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <select
+                        value={prop.status}
+                        onChange={(e) =>
+                          onQuickUpdateProperty(prop.id, {
+                            status: e.target.value as Property['status'],
+                          })
+                        }
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition-colors cursor-pointer ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+                      >
+                        {Object.keys(STATUS_CONFIG).map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    {/* Custo Total */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <div className="font-extrabold text-slate-900 dark:text-white text-sm">
+                        {formatCurrency(
+                          prop.valorAluguel + prop.valorCondominio + prop.valorIptu
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        Aluguel {formatCurrency(prop.valorAluguel)}
+                      </div>
+                    </td>
+
+                    {/* Área Útil e R$/m² */}
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">
+                        {prop.areaUtil} m²
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {formatCurrencyPerM2(
+                          (prop.valorAluguel + prop.valorCondominio + prop.valorIptu) /
+                            prop.areaUtil
                         )}
                       </div>
                     </td>
 
-                    {/* Quick Status Dropdown */}
-                    <td className="py-3 px-3">
-                      <select
-                        value={prop.status in STATUS_CONFIG ? prop.status : 'Para Analisar'}
-                        onChange={(e) => onStatusChange(prop.id, e.target.value as PropertyStatus)}
-                        className={`text-[11px] font-medium rounded-lg px-2 py-1 border transition-all cursor-pointer ${statusCfg.bg} ${statusCfg.border} ${statusCfg.text}`}
-                      >
-                        <option value="Para Analisar">Para Analisar</option>
-                        <option value="Agendar Visita">Agendar Visita</option>
-                        <option value="Visita Agendada">Visita Agendada</option>
-                        <option value="Pendente Avaliação">Pendente Avaliação</option>
-                        <option value="Proposta Enviada">Proposta Enviada</option>
-                        <option value="Descartado">Descartado</option>
-                      </select>
-                    </td>
-
-                    {/* Total Cost */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm block">
-                        {formatCurrency(prop.custoTotalMensal)}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Aluguel: {formatCurrency(prop.valorAluguel)}
-                      </span>
-                    </td>
-
-                    {/* Area & R$/m² */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="font-semibold text-slate-900 dark:text-slate-200">
-                        {prop.areaUtil} m²
-                      </span>
+                    {/* Cômodos */}
+                    <td className="py-3 px-3 whitespace-nowrap text-[11px]">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300">
+                        {prop.dormitorios} dorms ({prop.suites} suítes)
+                      </div>
                       <div className="text-[10px] text-slate-400">
-                        {formatCurrencyPerM2(prop.precoMetroQuadrado)}
+                        {prop.banheiros} banh. • {prop.vagasGaragem} vagas
                       </div>
                     </td>
 
-                    {/* Specs */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <div>{prop.dormitorios} qtos ({prop.suites} st)</div>
-                      <div className="text-[10px] text-slate-400 font-semibold">{prop.vagasGaragem} vaga{prop.vagasGaragem > 1 ? 's' : ''}</div>
-                    </td>
-
-                    {/* SAYMON COMPACT BADGE (🧑🏻‍🦱 Nota 1-5 Dropdown/Button) */}
-                    <td className="py-3 px-[10px] text-center whitespace-nowrap">
+                    {/* SAYMON COMPACT BADGE (🧑🏻‍🦱 Nota 1-5 Single Star Indicator) */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap">
                       <select
                         value={prop.notaSaymon}
                         onChange={(e) =>
                           onQuickUpdateProperty(prop.id, { notaSaymon: Number(e.target.value) })
                         }
-                        title={`Saymon — Nota ${prop.notaSaymon}/5 (Clique para alterar)`}
-                        className="h-7 w-12 text-xs font-bold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1"
+                        title="Saymon"
+                        className="h-7 w-12 text-xs font-extrabold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1 shadow-sm hover:border-amber-400 transition-all"
                       >
                         {[1, 2, 3, 4, 5].map((n) => (
                           <option key={n} value={n}>
@@ -345,15 +339,15 @@ export function PropertyTableView({
                       </select>
                     </td>
 
-                    {/* KELLY COMPACT BADGE (👩🏻‍🦱 Nota 1-5 Dropdown/Button) */}
-                    <td className="py-3 px-[10px] text-center whitespace-nowrap">
+                    {/* KELLY COMPACT BADGE (👩🏻‍🦱 Nota 1-5 Single Star Indicator) */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap">
                       <select
                         value={prop.notaKelly}
                         onChange={(e) =>
                           onQuickUpdateProperty(prop.id, { notaKelly: Number(e.target.value) })
                         }
-                        title={`Kelly — Nota ${prop.notaKelly}/5 (Clique para alterar)`}
-                        className="h-7 w-12 text-xs font-bold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1"
+                        title="Kelly"
+                        className="h-7 w-12 text-xs font-extrabold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1 shadow-sm hover:border-amber-400 transition-all"
                       >
                         {[1, 2, 3, 4, 5].map((n) => (
                           <option key={n} value={n}>
@@ -365,52 +359,56 @@ export function PropertyTableView({
 
                     {/* DESLOCAMENTO (Saymon 🧑🏻‍🦱, Kelly 👩🏻‍🦱, e Média 💑) */}
                     <td className="py-3 px-3 whitespace-nowrap text-[11px]">
-                      <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
                         <span title="Saymon (Trabalho)">🧑🏻‍🦱 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                         <span className="text-slate-300">|</span>
                         <span title="Kelly (Trabalho)">👩🏻‍🦱 {prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                       </div>
-                      <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                      <div className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
                         💑 Média: {Math.round(((prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos) + (prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos)) / 2)} min
                       </div>
                     </td>
 
-                    {/* ACTIONS: 💬 Comentários Pop-up + Menu (⋮) */}
-                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                    {/* ACTIONS: 💬 Comentários Pop-up + Menu de Três Pontinhos (⋮) */}
+                    <td className="py-3 px-3 text-right whitespace-nowrap relative">
                       <div className="flex items-center justify-end gap-1.5 relative">
                         {/* 💬 Pop-up Modal Button for Comments & Realtor Questions */}
                         <button
                           type="button"
                           onClick={() => setCommentsModalProp(prop)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-600 hover:text-white transition-colors"
-                          title="Ver Opiniões do Casal & Perguntas para o Corretor"
+                          className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-600 hover:text-white transition-colors shadow-sm"
+                          title="Opiniões do Casal & Perguntas para o Corretor"
                         >
                           <MessageSquare className="h-4 w-4" />
                         </button>
 
-                        {/* MENU DE TRÊS PONTINHOS (⋮) */}
+                        {/* MENU DE TRÊS PONTINHOS (⋮) - Prevent cut-off by using z-50 and smart placement */}
                         <div className="relative">
                           <button
                             type="button"
                             onClick={() =>
                               setOpenActionMenuId(isMenuOpen ? null : prop.id)
                             }
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                            title="Mais Opções de Ação"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                            title="Mais Ações"
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
 
                           {/* Dropdown Menu Items */}
                           {isMenuOpen && (
-                            <div className="absolute right-0 top-9 z-50 w-44 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 text-xs text-left animate-in fade-in-50 zoom-in-95">
+                            <div
+                              className={`absolute right-0 ${
+                                isLastRow ? 'bottom-9' : 'top-9'
+                              } z-50 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-1.5 text-xs text-left ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95`}
+                            >
                               <button
                                 type="button"
                                 onClick={() => {
                                   setOpenActionMenuId(null);
                                   onSelectDetails(prop);
                                 }}
-                                className="w-full px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                                className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 font-medium transition-colors"
                               >
                                 <Eye className="h-4 w-4 text-indigo-500" />
                                 <span>Ver Detalhes</span>
@@ -422,7 +420,7 @@ export function PropertyTableView({
                                   setOpenActionMenuId(null);
                                   onEdit(prop);
                                 }}
-                                className="w-full px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                                className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 font-medium transition-colors"
                               >
                                 <Edit2 className="h-4 w-4 text-blue-500" />
                                 <span>Editar Imóvel</span>
@@ -435,10 +433,19 @@ export function PropertyTableView({
                                     setOpenActionMenuId(null);
                                     onToggleArchive(prop.id);
                                   }}
-                                  className="w-full px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-medium"
+                                  className="w-full px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 font-medium transition-colors"
                                 >
-                                  <Archive className="h-4 w-4 text-amber-500" />
-                                  <span>{prop.isArquivado ? 'Desarquivar' : 'Arquivar Imóvel'}</span>
+                                  {prop.isArquivado ? (
+                                    <>
+                                      <RotateCcw className="h-4 w-4 text-emerald-500" />
+                                      <span>Desarquivar Imóvel</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Archive className="h-4 w-4 text-amber-500" />
+                                      <span>Arquivar Imóvel</span>
+                                    </>
+                                  )}
                                 </button>
                               )}
 
@@ -450,7 +457,7 @@ export function PropertyTableView({
                                   setOpenActionMenuId(null);
                                   onDelete(prop.id);
                                 }}
-                                className="w-full px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 font-medium"
+                                className="w-full px-3.5 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2.5 font-medium transition-colors"
                               >
                                 <Trash2 className="h-4 w-4" />
                                 <span>Excluir Imóvel</span>

@@ -242,6 +242,38 @@ export function useProperties() {
     [setProperties]
   );
 
+  const recalculateCommuteTimes = useCallback(
+    async (anchors: CommuteAnchors) => {
+      const updatedList = await Promise.all(
+        properties.map(async (p) => {
+          try {
+            const res = await fetch('/api/calculate-commute', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
+                saymonWork: anchors.saymonWork,
+                kellyWork: anchors.kellyWork,
+              }),
+            });
+            const json = await res.json();
+            if (json.success) {
+              return {
+                ...p,
+                tempoSaymonMinutos: json.tempoSaymonMinutos,
+                tempoKellyMinutos: json.tempoKellyMinutos,
+                tempoAteTrabalhoMinutos: json.mediaTempoMinutos,
+              };
+            }
+          } catch (e) {}
+          return p;
+        })
+      );
+      setProperties(updatedList);
+    },
+    [properties, setProperties]
+  );
+
   const deleteProperty = useCallback(
     (id: string) => {
       setProperties((prev) => prev.filter((item) => item.id !== id));
