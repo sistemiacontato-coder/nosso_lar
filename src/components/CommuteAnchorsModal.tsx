@@ -11,9 +11,9 @@ import { CommuteAnchors } from '@/types/property';
 export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v3';
 
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
-  saymonAddress1: 'Miguel Rachid, 205, Osasco - SP',
+  saymonAddress1: '',
   saymonAddress2: '',
-  kellyAddress1: 'Prédio Prata - Bradesco (Cidade de Deus), Osasco - SP',
+  kellyAddress1: '',
   kellyAddress2: '',
 };
 
@@ -24,9 +24,9 @@ export function getStoredCommuteAnchors(): CommuteAnchors {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        saymonAddress1: parsed.saymonAddress1 || DEFAULT_COMMUTE_ANCHORS.saymonAddress1,
+        saymonAddress1: parsed.saymonAddress1 || '',
         saymonAddress2: parsed.saymonAddress2 || '',
-        kellyAddress1: parsed.kellyAddress1 || DEFAULT_COMMUTE_ANCHORS.kellyAddress1,
+        kellyAddress1: parsed.kellyAddress1 || '',
         kellyAddress2: parsed.kellyAddress2 || '',
       };
     }
