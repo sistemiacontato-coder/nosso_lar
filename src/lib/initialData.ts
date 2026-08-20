@@ -3,11 +3,11 @@ import { Property } from '@/types/property';
 export const INITIAL_PROPERTIES: Property[] = [
   {
     id: 'prop-osasco-3464',
-    titulo: 'Apto 3 Quartos (84m²) - Continental / Vila Yara',
+    titulo: 'Residencial Continental',
     urlAnuncio: 'https://www.b2mimoveis.com.br/imovel/apartamento-osasco-3-quartos-84-m/AP3464-B2MC',
     urlImagem: 'https://imgs.kenlo.io/VWRCUkQ2Tnp3d1BJRDBJVe1szkhnWr9UfpZS9ftWwjXgr7v5Znen3XVcMHllDVRJJeIbi3YwVYEtu2JbwsxMo08BqtsDUISG7SC6wYm9oufJhx6X16nYlp3jzcXtYuzAxMU0lICrAniXrZZVQ-gXbGJpYutAazy3R8KRGXtS-BeQ-X7iUaRiE3Jb4zEMgUl0+2f8fqWT7nIM-Qr1BOL1uAeIRb7hP0FTQPlLANk18QdW9hinR0InpwcS45urs3PTcKG1MI36iGwAF0wy6oK5APevm5PPedV-GacxP3wP61NeW6wcmvuVAupw6QEZovrFTQeShQjQiOM3eYWuWN1JlbwAlAvAH7UfuRvtwtKU0qP5akmDZlc0obzO8PvlPP7xTbSkZ26pkpg85ZjVEMhUN46nSDQVFyQvcXdBsl7ktPyL7AD5bSnYrhAWHxPRzsM49G5-clU=.jpg',
     bairro: 'Vila Yara / Continental - Osasco',
-    endereco: 'Avenida Yara - Vila Yara / Próximo ao Continental Shopping',
+    endereco: 'Avenida Yara - Próximo ao Continental Shopping',
     valorAluguel: 4300,
     valorCondominio: 820,
     valorIptu: 210,
@@ -52,7 +52,7 @@ export const INITIAL_PROPERTIES: Property[] = [
   },
   {
     id: 'prop-vanderleia-78804346',
-    titulo: 'Apto 3 Quartos com 2 Vagas na Vila Yara (75m²)',
+    titulo: 'Edifício Deputado Emílio Carlos',
     urlAnuncio: 'http://www.vanderleiaimoveis.com.br/alugar/sp/osasco/vila-yara/apartamento/78804346',
     urlImagem: 'https://cdn5.uso.com.br/48599/2026/08/315297296.jpg',
     bairro: 'Vila Yara - Osasco',
@@ -79,7 +79,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Elevador',
       'Aceita Pet',
     ],
-    status: 'Visita Agendada',
+    status: 'Visitado',
 
     // Avaliação Saymon
     notaSaymon: 5,
@@ -100,7 +100,7 @@ export const INITIAL_PROPERTIES: Property[] = [
   },
   {
     id: 'prop-osasco-3527',
-    titulo: 'Apto 3 Quartos (90m²) na Rua Moema - Vila Yara',
+    titulo: 'Lorian Moema',
     urlAnuncio: 'http://b2mimoveis.com.br/imovel/detalhes/AP3527-B2MC',
     urlImagem: 'https://imgs.kenlo.io/VWRCUkQ2Tnp3d1BJRDBJVe1szkhnWr9UfpZS9ftWwjXgr7v5Znen3XVcMHllDVRJJeIbi3YwVYEtu0w8if1+1k83w8MHZ5uShCi-w4O07s+BpVy336uHg+Pf+IbDBeOGkosy2qf8FlTp77dLf9wWI2t4SrlhGB3EVqygJnlqrXyvo3XnEYp4UWla3iE3vkoJymuacciF1nU78SOdEsvKlw6MToqjDWcEHrMNAdsz6EIJ9xa9SUxy8h8d4563vSCAaKyyLIOvkiMYDwYu6oa6SeKv15TFJsonDqooL34J41sRFqAe2beFX6J24QkLuOfUB1+EkBnHl+8kYMGwX9hLnaoclAzHGLZJu02+kICR1-OqOkiCNgY5-Oybqfq4aP7yG-zscXuqhYsCyY7dIvVZKpiiDCMXAjMleGNWuUm6qvXO4g6rcjWJtghHCVTfwI4npnZ9ehhc.jpg',
     bairro: 'Vila Yara - Osasco',
@@ -148,7 +148,7 @@ export const INITIAL_PROPERTIES: Property[] = [
   },
   {
     id: 'prop-vilasaofrancisco-viva',
-    titulo: 'Apto 3 Quartos na Vila São Francisco (80m²)',
+    titulo: 'Residencial Cândido Mota',
     urlAnuncio: 'https://www.vivareal.com.br/imovel/apartamento-3-quartos-vila-sao-francisco-zona-oeste-zona-oeste-sao-paulo-com-garagem-80m2-aluguel-RS3800-id-2904724653/',
     urlImagem: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80',
     bairro: 'Vila São Francisco - Zona Oeste SP',
@@ -196,7 +196,7 @@ export const INITIAL_PROPERTIES: Property[] = [
   },
   {
     id: 'prop-vilayara-viva-75m',
-    titulo: 'Apto 3 Quartos na Vila Yara (75m²)',
+    titulo: 'Edifício Parque Vila Yara',
     urlAnuncio: 'https://www.vivareal.com.br/imovel/apartamento-3-quartos-vila-yara-bairros-osasco-com-garagem-75m2-aluguel-RS3800-id-2903669398/',
     urlImagem: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80',
     bairro: 'Vila Yara - Osasco',

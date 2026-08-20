@@ -7,7 +7,7 @@ import { useLocalStorage } from './useLocalStorage';
 import { calculateTotals } from '@/lib/utils';
 import { PropertyFormValues } from '@/lib/schemas';
 
-const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v4';
+const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v5';
 
 export function useProperties() {
   const [properties, setProperties, isLoaded] = useLocalStorage<Property[]>(

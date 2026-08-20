@@ -188,7 +188,7 @@ export function PropertyTableView({
 
                     {/* Specs */}
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <div>{prop.dormitorios} qtos ({prop.suites} st)</div>
+                      <div>{prop.dormitorios} qtos ({prop.suites} suíte{prop.suites > 1 ? 's' : ''})</div>
                       <div className="text-[10px] text-slate-400 font-semibold">{prop.vagasGaragem} vaga{prop.vagasGaragem > 1 ? 's' : ''}</div>
                     </td>
 

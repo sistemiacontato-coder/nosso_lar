@@ -66,7 +66,14 @@ export async function POST(req: NextRequest) {
       getMeta('twitter:title') ||
       html.match(/<title>(.*?)<\/title>/i)?.[1] ||
       '';
-    title = title.replace(/\s*\|\s*.*$/, '').replace(/\s*-\s*Viva Real.*$/, '').trim();
+    title = title
+      .replace(/\s*\|\s*.*$/, '')
+      .replace(/\s*-\s*Viva Real.*$/i, '')
+      .replace(/Apartamento com \d+ dormitórios.*?(?:por R\$\s*[\d\.,]+)?/i, 'Edifício Residencial')
+      .replace(/Apartamento para locação em.*?:/i, 'Residencial')
+      .replace(/\(\d+m²\)/i, '')
+      .replace(/:\s*\d+\s*quartos.*/i, '')
+      .trim();
 
     // 3. Extrair Descrição / Bairro
     const description = getMeta('og:description') || getMeta('description') || '';
