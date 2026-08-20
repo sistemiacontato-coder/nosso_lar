@@ -141,7 +141,7 @@ export function PropertyTableView({
               <th className="py-2.5 px-2 text-center whitespace-nowrap" title="Foto do Imóvel">
                 Foto
               </th>
-              <th className="py-2.5 px-2 whitespace-nowrap" title="Título do Imóvel e Bairro">
+              <th className="py-2.5 px-2 whitespace-nowrap w-40" title="Título do Imóvel e Bairro">
                 Imóvel & Bairro
               </th>
               <th className="py-2.5 px-2 whitespace-nowrap" title="Status no Funil de Decisão">
@@ -170,9 +170,9 @@ export function PropertyTableView({
               </th>
               <th
                 className="py-2.5 px-2 whitespace-nowrap cursor-help"
-                title="Tempo de Deslocamento do Casal"
+                title="Tempo de Trajeto do Casal"
               >
-                Deslocamento
+                Trajeto
               </th>
               <th className="py-2.5 px-2 text-right whitespace-nowrap">
                 Ações
@@ -201,15 +201,16 @@ export function PropertyTableView({
                 return (
                   <tr
                     key={prop.id}
-                    className={`hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors ${
+                    onClick={() => setCommentsModalProp(prop)}
+                    className={`cursor-pointer hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors ${
                       isSelected ? 'bg-rose-50/30 dark:bg-rose-950/20' : ''
                     }`}
                   >
                     {/* Checkbox comparison */}
-                    <td className="py-3 px-3 text-center">
+                    <td className="py-3 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
-                        onClick={() => onToggleCompare(prop.id)}
+                        onClick={(e) => { e.stopPropagation(); onToggleCompare(prop.id); }}
                         className="text-slate-400 hover:text-indigo-600 transition-colors inline-flex"
                         title={isSelected ? 'Remover da comparação' : 'Comparar'}
                       >
@@ -238,8 +239,8 @@ export function PropertyTableView({
                     </td>
 
                     {/* Título & Bairro */}
-                    <td className="py-3 px-3">
-                      <div className="max-w-[220px]">
+                    <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="max-w-[176px]">
                         <button
                           type="button"
                           onClick={() => onSelectDetails(prop)}
@@ -293,7 +294,7 @@ export function PropertyTableView({
                     </td>
 
                     {/* Status Dropdown */}
-                    <td className="py-3 px-3 whitespace-nowrap">
+                    <td className="py-3 px-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={prop.status}
                         onChange={(e) =>
@@ -323,31 +324,25 @@ export function PropertyTableView({
                       </div>
                     </td>
 
-                    {/* Área Útil e R$/m² */}
+                    {/* Área Útil */}
                     <td className="py-3 px-3 whitespace-nowrap">
                       <div className="font-semibold text-slate-700 dark:text-slate-300">
                         {prop.areaUtil} m²
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        {formatCurrencyPerM2(
-                          (prop.valorAluguel + prop.valorCondominio + prop.valorIptu) /
-                            prop.areaUtil
-                        )}
                       </div>
                     </td>
 
                     {/* Cômodos */}
                     <td className="py-3 px-3 whitespace-nowrap text-[11px]">
                       <div className="font-semibold text-slate-700 dark:text-slate-300">
-                        {prop.dormitorios} dorms ({prop.suites} suítes)
+                        {prop.dormitorios} dorms{prop.suites > 0 ? ` | ${prop.suites} st` : ''}
                       </div>
                       <div className="text-[10px] text-slate-400">
                         {prop.banheiros} banh. • {prop.vagasGaragem} vagas
                       </div>
                     </td>
 
-                    {/* SAYMON COMPACT BADGE (🧑🏻‍🦱 Nota 1-5 Single Star Indicator) */}
-                    <td className="py-3 px-2 text-center whitespace-nowrap">
+                    {/* SAYMON COMPACT BADGE */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={prop.notaSaymon}
                         onChange={(e) =>
@@ -364,8 +359,8 @@ export function PropertyTableView({
                       </select>
                     </td>
 
-                    {/* KELLY COMPACT BADGE (👩🏻‍🦱 Nota 1-5 Single Star Indicator) */}
-                    <td className="py-3 px-2 text-center whitespace-nowrap">
+                    {/* KELLY COMPACT BADGE */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={prop.notaKelly}
                         onChange={(e) =>
@@ -382,25 +377,22 @@ export function PropertyTableView({
                       </select>
                     </td>
 
-                    {/* DESLOCAMENTO (Saymon 🧑🏻‍🦱, Kelly 👩🏻‍🦱, e Média 💑) */}
+                    {/* TRAJETO */}
                     <td className="py-3 px-3 whitespace-nowrap text-[11px]">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
                         <span title="Saymon (Trabalho)">🧑🏻‍🦱 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                         <span className="text-slate-300">|</span>
                         <span title="Kelly (Trabalho)">👩🏻‍🦱 {prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                       </div>
-                      <div className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                        💑 Média: {Math.round(((prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos) + (prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos)) / 2)} min
-                      </div>
                     </td>
 
                     {/* ACTIONS: 💬 Comentários Pop-up + Menu de Três Pontinhos (⋮) */}
-                    <td className="py-3 px-3 text-right whitespace-nowrap relative">
+                    <td className="py-3 px-3 text-right whitespace-nowrap relative" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5 relative">
                         {/* 💬 Pop-up Modal Button for Comments & Realtor Questions */}
                         <button
                           type="button"
-                          onClick={() => setCommentsModalProp(prop)}
+                          onClick={(e) => { e.stopPropagation(); setCommentsModalProp(prop); }}
                           className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-600 hover:text-white transition-colors shadow-sm"
                           title="Opiniões do Casal & Perguntas para o Corretor"
                         >
