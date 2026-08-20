@@ -868,9 +868,9 @@ export function PropertyFormModal({
                   <select
                     id="notaSaymon"
                     {...register('notaSaymon')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Sem Nota (Ainda não avaliado)</option>
+                    <option value="">Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
                         ⭐ {n}
@@ -884,9 +884,9 @@ export function PropertyFormModal({
                   <select
                     id="vereditoSaymon"
                     {...register('vereditoSaymon')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Pendente / Sem Veredito</option>
+                    <option value="">Pendente</option>
                     <option value="Aprovado">😍 Aprovado</option>
                     <option value="Gostei">👍 Gostei</option>
                     <option value="Neutro">😐 Neutro</option>
@@ -919,9 +919,9 @@ export function PropertyFormModal({
                   <select
                     id="notaKelly"
                     {...register('notaKelly')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Sem Nota (Ainda não avaliada)</option>
+                    <option value="">Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
                         ⭐ {n}
@@ -935,9 +935,9 @@ export function PropertyFormModal({
                   <select
                     id="vereditoKelly"
                     {...register('vereditoKelly')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Pendente / Sem Veredito</option>
+                    <option value="">Pendente</option>
                     <option value="Aprovada">😍 Aprovada</option>
                     <option value="Gostei">👍 Gostei</option>
                     <option value="Neutra">😐 Neutra</option>

@@ -29,6 +29,7 @@ import { PropertyCommentsModal } from './PropertyCommentsModal';
 
 interface PropertyTableViewProps {
   properties: Property[];
+  allProperties?: Property[];
   onSelectDetails: (property: Property) => void;
   onEdit: (property: Property) => void;
   onDelete: (id: string) => void;
@@ -45,6 +46,7 @@ interface PropertyTableViewProps {
 
 export function PropertyTableView({
   properties,
+  allProperties,
   onSelectDetails,
   onEdit,
   onDelete,
@@ -64,19 +66,20 @@ export function PropertyTableView({
     return !p.isSugestao && !p.isArquivado;
   });
 
-  const nossosCount = properties.filter((p) => !p.isSugestao && !p.isArquivado).length;
-  const sugestaoCount = properties.filter((p) => p.isSugestao && !p.isArquivado).length;
-  const arquivadosCount = properties.filter((p) => p.isArquivado).length;
+  const totalSource = allProperties || properties;
+  const nossosCount = totalSource.filter((p) => !p.isSugestao && !p.isArquivado).length;
+  const sugestaoCount = totalSource.filter((p) => p.isSugestao && !p.isArquivado).length;
+  const arquivadosCount = totalSource.filter((p) => p.isArquivado).length;
 
   return (
     <div className="rounded-3xl border border-slate-200/80 bg-white dark:bg-slate-900 dark:border-slate-800 shadow-xl overflow-hidden">
       {/* Sub-menu Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800/80 rounded-2xl">
           <button
             type="button"
             onClick={() => setActiveTab('nossos')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'nossos'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -91,7 +94,7 @@ export function PropertyTableView({
           <button
             type="button"
             onClick={() => setActiveTab('sugestao')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'sugestao'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -106,7 +109,7 @@ export function PropertyTableView({
           <button
             type="button"
             onClick={() => setActiveTab('arquivados')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'arquivados'
                 ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -126,59 +129,52 @@ export function PropertyTableView({
         )}
       </div>
 
-      {/* Table Container with minimum height so dropdown menus never get cut off */}
-      <div className="overflow-x-auto min-h-[360px] pb-16">
-        <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+      {/* Responsive Table Container with compact layout to fit monitor */}
+      <div className="overflow-x-auto min-h-[300px] pb-12 no-scrollbar scroll-smooth">
+        <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 table-auto">
           {/* Header */}
-          <thead className="bg-slate-100/80 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800/90 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
+          <thead className="bg-slate-100/80 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800/90 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th className="py-3 px-3 w-10 text-center whitespace-nowrap" title="Comparar imóveis">
+              <th className="py-2.5 px-2 text-center whitespace-nowrap" title="Comparar imóveis">
                 Comp.
               </th>
-              <th className="py-3 px-3 w-12 text-center whitespace-nowrap" title="Foto do Imóvel">
+              <th className="py-2.5 px-2 text-center whitespace-nowrap" title="Foto do Imóvel">
                 Foto
               </th>
-              <th className="py-3 px-3 whitespace-nowrap" title="Título do Imóvel e Bairro">
+              <th className="py-2.5 px-2 whitespace-nowrap" title="Título do Imóvel e Bairro">
                 Imóvel & Bairro
               </th>
-              <th className="py-3 px-3 whitespace-nowrap" title="Status no Funil de Decisão">
+              <th className="py-2.5 px-2 whitespace-nowrap" title="Status no Funil de Decisão">
                 Status
               </th>
-              <th className="py-3 px-3 whitespace-nowrap" title="Pacote Mensal Total (Aluguel + Condomínio + IPTU)">
+              <th className="py-2.5 px-2 whitespace-nowrap" title="Pacote Mensal Total (Aluguel + Condomínio + IPTU)">
                 Custo Total
               </th>
-              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Área Útil (m²) e Valor por m²">
+              <th className="py-2.5 px-2 whitespace-nowrap cursor-help" title="Área Útil (m²) e Valor por m²">
                 Área
               </th>
-              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Dormitórios, Suítes e Vagas">
+              <th className="py-2.5 px-2 whitespace-nowrap cursor-help" title="Dormitórios, Suítes e Vagas">
                 Cômodos
               </th>
-
-              {/* Menino Moreno Emoji (Saymon) */}
               <th
-                className="py-3 px-2 w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
+                className="py-2.5 px-1.5 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
                 title="Saymon"
               >
-                <span className="text-base" role="img" aria-label="Saymon">🧑🏻‍🦱</span>
+                <span className="text-sm sm:text-base" role="img" aria-label="Saymon">🧑🏻‍🦱</span>
               </th>
-
-              {/* Mulher Morena Emoji (Kelly) */}
               <th
-                className="py-3 px-2 w-14 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
+                className="py-2.5 px-1.5 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
                 title="Kelly"
               >
-                <span className="text-base" role="img" aria-label="Kelly">👩🏻‍🦱</span>
+                <span className="text-sm sm:text-base" role="img" aria-label="Kelly">👩🏻‍🦱</span>
               </th>
-
-              {/* Deslocamento Header (Sem ? ou emoji polutuado) */}
               <th
-                className="py-3 px-3 whitespace-nowrap cursor-help"
-                title="Tempo de Deslocamento do Casal (Saymon, Kelly e Média)"
+                className="py-2.5 px-2 whitespace-nowrap cursor-help"
+                title="Tempo de Deslocamento do Casal"
               >
                 Deslocamento
               </th>
-
-              <th className="py-3 px-3 w-28 text-right whitespace-nowrap">
+              <th className="py-2.5 px-2 text-right whitespace-nowrap">
                 Ações
               </th>
             </tr>

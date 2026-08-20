@@ -334,7 +334,8 @@ function DashboardContent() {
               />
             ) : (
               <PropertyTableView
-                properties={properties}
+                properties={filteredProperties}
+                allProperties={properties}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleFavorite={toggleFavorite}

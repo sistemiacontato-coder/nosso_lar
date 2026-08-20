@@ -15,57 +15,65 @@ export async function GET(req: NextRequest) {
     const suggestions: any[] = [];
     const seenIds = new Set<string>();
 
-    // 1. Try Photon Komoot API (Optimized for POIs like "Prédio Prata", "Bradesco", "Shopping", with SP location bias)
-    try {
-      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&lat=-23.5505&lon=-46.6333&limit=7&lang=pt`;
-      const photonRes = await fetch(photonUrl, {
-        headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' },
-      });
+    const apiKey = process.env.GEMINI_API_KEY;
 
-      if (photonRes.ok) {
-        const photonData = await photonRes.json();
-        if (photonData.features && Array.isArray(photonData.features)) {
-          for (const feature of photonData.features) {
-            const props = feature.properties || {};
-            const coords = feature.geometry?.coordinates || [];
+    // 1. Primary: Gemini AI Location Resolver (Returns exact Google Maps Landmarks & POIs for Brazil/SP)
+    if (apiKey) {
+      try {
+        const prompt = `Você é uma API do Google Maps para o Brasil. Dada a busca "${cleanQuery}", retorne no máximo 5 locais reais e precisos do Google Maps (ruas, avenidas, prédios conhecidos, bairros, pontos de interesse em São Paulo, Osasco ou Brasil).
+Responda EXCLUSIVAMENTE em formato JSON VÁLIDO:
+[
+  {
+    "id": "loc-1",
+    "displayName": "Prédio Prata - Bradesco, Cidade de Deus, Osasco - SP, Brasil",
+    "shortTitle": "Prédio Prata (Cidade de Deus, Osasco)",
+    "lat": -23.5321,
+    "lon": -46.7772
+  }
+]`;
 
-            const name = props.name || '';
-            const street = props.street || '';
-            const houseNumber = props.housenumber ? `, ${props.housenumber}` : '';
-            const district = props.district || props.suburb || props.locality || '';
-            const city = props.city || props.town || props.state || '';
-            const state = props.state ? ` - ${props.state}` : '';
+        const aiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
 
-            // Format clean title
-            let mainText = name || street;
-            if (street && name && street !== name) {
-              mainText = `${name} (${street}${houseNumber})`;
-            } else if (street && houseNumber) {
-              mainText = `${street}${houseNumber}`;
-            }
-
-            const parts = [mainText, district, city].filter(Boolean);
-            const fullLabel = parts.join(', ') + state;
-
-            const key = `${props.osm_id || fullLabel}`;
-            if (!seenIds.has(key) && fullLabel.length > 5) {
-              seenIds.add(key);
-              suggestions.push({
-                id: key,
-                displayName: fullLabel,
-                shortTitle: mainText || fullLabel,
-                lat: coords[1],
-                lon: coords[0],
-              });
+        if (aiRes.ok) {
+          const aiJson = await aiRes.json();
+          const candidateText = aiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidateText) {
+            const cleanJsonStr = candidateText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const items = JSON.parse(cleanJsonStr);
+            if (Array.isArray(items)) {
+              for (const item of items) {
+                if (item.displayName && item.lat && item.lon) {
+                  const key = `ai-${item.displayName}`;
+                  if (!seenIds.has(key)) {
+                    seenIds.add(key);
+                    suggestions.push({
+                      id: key,
+                      displayName: item.displayName,
+                      shortTitle: item.shortTitle || item.displayName,
+                      lat: item.lat,
+                      lon: item.lon,
+                    });
+                  }
+                }
+              }
             }
           }
         }
+      } catch (e) {
+        console.warn('Gemini Geocode error:', e);
       }
-    } catch (e) {
-      console.warn('Photon API query error:', e);
     }
 
-    // 2. Secondary Fallback: OpenStreetMap Nominatim with São Paulo Bounding Box Bias
+    // 2. Secondary: OpenStreetMap Nominatim with São Paulo Bounding Box Bias
     try {
       const searchQ = cleanQuery.toLowerCase().includes('sp') || cleanQuery.toLowerCase().includes('osasco') || cleanQuery.toLowerCase().includes('são paulo')
         ? cleanQuery
