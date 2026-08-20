@@ -648,16 +648,18 @@ export function PropertyFormModal({
 
                 {/* Suggestions Dropdown */}
                 {addressSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl py-1 text-xs">
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1 text-xs">
                     {addressSuggestions.map((item, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleSelectAddressSuggestion(item)}
-                        className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-start gap-2.5 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
                       >
-                        <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                        <span className="truncate">{item.displayName || item.shortTitle}</span>
+                        <MapPin className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800 dark:text-slate-100 leading-normal">
+                          {item.displayName || item.shortTitle || item.display_name}
+                        </span>
                       </button>
                     ))}
                   </div>
