@@ -150,32 +150,6 @@ function DashboardContent() {
           /* ABA 1: PAINEL / DASHBOARD                                */
           /* ======================================================== */
           <div className="space-y-6 animate-fade-in">
-            {/* Header Banner */}
-            <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="space-y-2 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30">
-                  <Heart className="h-3.5 w-3.5 fill-rose-500" />
-                  Painel de Controle — Saymon & Kelly
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-                  Resumo Consolidado de Cotações 📊
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300">
-                  Acompanhe todos os indicadores em tempo real, melhores correspondências do casal e tempos de deslocamento calculados com trânsito de pico.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMainTab('imoveis')}
-                  className="px-5 py-3 rounded-2xl bg-white text-slate-900 font-bold text-xs hover:bg-slate-100 transition-all flex items-center gap-2 shadow-lg"
-                >
-                  <span>Ver Todos os Imóveis ({totalCount})</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
 
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

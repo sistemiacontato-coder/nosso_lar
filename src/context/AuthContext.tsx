@@ -1,12 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-export type UserRole = 'Saymon' | 'Kelly';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface UserSession {
   username: string;
-  name: UserRole;
+  name: string;
   avatar: string;
 }
 
@@ -22,75 +20,72 @@ const AUTH_STORAGE_KEY = 'nosso_lar_auth_session_v1';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
+  // Restore session from localStorage
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && (parsed.name === 'Saymon' || parsed.name === 'Kelly')) {
-          setUser(parsed);
-        }
+      const savedSession = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (savedSession) {
+        setUser(JSON.parse(savedSession));
       }
     } catch (e) {
-      console.error('Error loading auth session:', e);
+      console.error('Failed to restore user session', e);
     }
   }, []);
 
   const login = (username: string, password: string) => {
     const cleanUsername = username.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
-    // Check Kelly
+    // Check Kelly: login kelly | password 123456
     if (cleanUsername === 'kelly' || cleanUsername.includes('kelly')) {
-      const session: UserSession = {
-        username: 'kelly',
-        name: 'Kelly',
-        avatar: '👩',
+      if (cleanPassword === '123456') {
+        const session: UserSession = {
+          username: 'kelly',
+          name: 'Kelly',
+          avatar: '👩',
+        };
+        setUser(session);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+        setIsLoginModalOpen(false);
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: 'Senha incorreta para o usuário Kelly. (Dica: 123456)',
       };
-      setUser(session);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-      setIsLoginModalOpen(false);
-      return { success: true };
     }
 
-    // Check Saymon / Masterdev / Simon
+    // Check Saymon: login masterdev ou saymon | password 123123@! ou 123456
     if (
       cleanUsername === 'saymon' ||
       cleanUsername === 'masterdev' ||
       cleanUsername === 'simon' ||
       cleanUsername.includes('saymon')
     ) {
-      const session: UserSession = {
-        username: 'saymon',
-        name: 'Saymon',
-        avatar: '🧔',
+      if (cleanPassword === '123123@!' || cleanPassword === '123456') {
+        const session: UserSession = {
+          username: 'saymon',
+          name: 'Saymon',
+          avatar: '🧔',
+        };
+        setUser(session);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+        setIsLoginModalOpen(false);
+        return { success: true };
+      }
+      return {
+        success: false,
+        error: 'Senha incorreta para o usuário Saymon. (Dica: 123123@!)',
       };
-      setUser(session);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-      setIsLoginModalOpen(false);
-      return { success: true };
-    }
-
-    // Default fallback if username typed matches any user
-    if (cleanUsername.length > 0) {
-      const isKellyName = cleanUsername.startsWith('k');
-      const session: UserSession = {
-        username: isKellyName ? 'kelly' : 'saymon',
-        name: isKellyName ? 'Kelly' : 'Saymon',
-        avatar: isKellyName ? '👩' : '🧔',
-      };
-      setUser(session);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-      setIsLoginModalOpen(false);
-      return { success: true };
     }
 
     return {
       success: false,
-      error: 'Informe um nome de usuário válido.',
+      error: 'Usuário não encontrado. Digite saymon ou kelly.',
     };
   };
 
@@ -113,12 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}
