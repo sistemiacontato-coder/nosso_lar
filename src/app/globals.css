@@ -82,3 +82,14 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Força opções "Sem Nota" e "Pendente" a terem a mesma cor das demais opções */
+select option {
+  color: inherit;
+  background-color: inherit;
+}
+
+/* Remove o estilo de placeholder acinzentado do browser para option[value=""] */
+select option[value=""] {
+  color: inherit;
+}

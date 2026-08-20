@@ -870,7 +870,7 @@ export function PropertyFormModal({
                     {...register('notaSaymon')}
                     className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Sem Nota</option>
+                    <option value="">— Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
                         ⭐ {n}
@@ -886,7 +886,7 @@ export function PropertyFormModal({
                     {...register('vereditoSaymon')}
                     className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Pendente</option>
+                    <option value="">— Pendente</option>
                     <option value="Aprovado">😍 Aprovado</option>
                     <option value="Gostei">👍 Gostei</option>
                     <option value="Neutro">😐 Neutro</option>
@@ -921,7 +921,7 @@ export function PropertyFormModal({
                     {...register('notaKelly')}
                     className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Sem Nota</option>
+                    <option value="">— Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
                         ⭐ {n}
@@ -937,7 +937,7 @@ export function PropertyFormModal({
                     {...register('vereditoKelly')}
                     className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
                   >
-                    <option value="">Pendente</option>
+                    <option value="">— Pendente</option>
                     <option value="Aprovada">😍 Aprovada</option>
                     <option value="Gostei">👍 Gostei</option>
                     <option value="Neutra">😐 Neutra</option>
