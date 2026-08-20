@@ -80,7 +80,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
     setSuggestions: (items: AddressSuggestion[]) => void,
     setLoading: (loading: boolean) => void
   ) => {
-    if (!query || query.trim().length < 3) {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
       return;
     }
@@ -174,6 +174,8 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                     id="saymonAddress1"
                     placeholder="Digite o endereço (ex: Miguel Rachid, 205, Osasco)..."
                     value={anchors.saymonAddress1}
+                    autoComplete="off"
+                    onFocus={(e) => fetchAddressSuggestions(e.target.value, setSaymonSuggestions, setLoadingSaymon)}
                     onChange={(e) => {
                       const val = e.target.value;
                       setAnchors((prev) => ({ ...prev, saymonAddress1: val }));
@@ -230,6 +232,8 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                     id="kellyAddress1"
                     placeholder="Digite o endereço (ex: Prédio Prata / Faria Lima)..."
                     value={anchors.kellyAddress1}
+                    autoComplete="off"
+                    onFocus={(e) => fetchAddressSuggestions(e.target.value, setKellySuggestions, setLoadingKelly)}
                     onChange={(e) => {
                       const val = e.target.value;
                       setAnchors((prev) => ({ ...prev, kellyAddress1: val }));
