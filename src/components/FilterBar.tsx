@@ -9,9 +9,8 @@ import {
   Table,
   Heart,
   X,
-  Filter,
-  Check,
   Sparkles,
+  Filter,
 } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -65,9 +64,7 @@ export function FilterBar({
   const handleToggleDifferential = (tag: string) => {
     const list = filters.diferenciais || [];
     const exists = list.includes(tag);
-    const updated = exists
-      ? list.filter((d) => d !== tag)
-      : [...list, tag];
+    const updated = exists ? list.filter((d) => d !== tag) : [...list, tag];
     onFilterChange({ ...filters, diferenciais: updated });
   };
 
@@ -97,73 +94,88 @@ export function FilterBar({
     filters.tempoMaxTrabalho;
 
   return (
-    <div className="space-y-4 mb-6">
-      {/* Top Filter Row: Search, Quick Status Pills, View Switcher & Actions */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Search Bar */}
-        <div className="relative flex-1 min-w-[260px]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            type="text"
-            placeholder="Buscar por bairro, título, observações, Saymon ou Kelly..."
-            value={filters.search}
-            onChange={handleSearchChange}
-            className="pl-10 pr-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm h-11 text-sm rounded-xl"
-          />
-          {filters.search && (
-            <button
-              onClick={() => onFilterChange({ ...filters, search: '' })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+    <div className="space-y-3 mb-4">
+      {/* 🚀 SINGLE ROW ELEGANT TOOLBAR */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 p-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs">
+        {/* Left Section: Search Input + Status Select */}
+        <div className="flex items-center gap-2 flex-1 min-w-[300px]">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="Buscar por bairro, título, obs..."
+              value={filters.search}
+              onChange={handleSearchChange}
+              className="pl-8 pr-7 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-9 text-xs rounded-xl"
+            />
+            {filters.search && (
+              <button
+                type="button"
+                onClick={() => onFilterChange({ ...filters, search: '' })}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Dropdown Selector */}
+          <select
+            value={filters.status}
+            onChange={(e) => handleStatusChange(e.target.value as any)}
+            className="h-9 appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs focus:outline-none shrink-0"
+          >
+            <option value="todos">Todos os Status ({totalOverall})</option>
+            <option value="Para Analisar">Para Analisar</option>
+            <option value="Agendar Visita">Agendar Visita</option>
+            <option value="Visita Agendada">Visita Agendada</option>
+            <option value="Pendente Avaliação">Pendente Avaliação</option>
+            <option value="Proposta Enviada">Proposta Enviada</option>
+            <option value="Descartado">Descartado</option>
+          </select>
         </div>
 
-        {/* Action Controls: Match do Casal, Favoritos, Sort, Advanced, View Switcher */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Match do Casal Filter */}
-          <Button
-            variant={filters.apenasMatchPerfeito ? 'default' : 'outline'}
-            size="sm"
+        {/* Center & Right Section: Toggles, Sort, Advanced Filters, View Switcher */}
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+          {/* Match do Casal Toggle Button */}
+          <button
+            type="button"
             onClick={handleToggleMatchPerfeito}
-            className={`h-11 rounded-xl px-3 transition-colors ${
+            className={`h-9 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               filters.apenasMatchPerfeito
-                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20 shadow-md'
-                : 'text-slate-700 dark:text-slate-300 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-rose-50/60 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/80 hover:bg-rose-100'
             }`}
+            title="Filtrar imóveis aprovados por ambos"
           >
-            <Sparkles className="h-4 w-4 mr-1.5 text-rose-500" />
-            <span className="text-xs sm:text-sm font-semibold">Match do Casal 💖</span>
-          </Button>
+            <Sparkles className="h-3.5 w-3.5 text-rose-500" />
+            <span>Match 💖</span>
+          </button>
 
-          {/* Favorites filter toggle */}
-          <Button
-            variant={filters.apenasFavoritos ? 'destructive' : 'outline'}
-            size="sm"
+          {/* Favoritos Toggle Button */}
+          <button
+            type="button"
             onClick={handleToggleFavorite}
-            className={`h-11 rounded-xl px-3 transition-colors ${
+            className={`h-9 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               filters.apenasFavoritos
-                ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                : 'text-slate-700 dark:text-slate-300'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
             }`}
+            title="Filtrar favoritos"
           >
-            <Heart
-              className={`h-4 w-4 mr-1.5 ${
-                filters.apenasFavoritos ? 'fill-current' : 'text-slate-400'
-              }`}
-            />
-            <span className="text-xs sm:text-sm">Favoritos</span>
-          </Button>
+            <Heart className={`h-3.5 w-3.5 ${filters.apenasFavoritos ? 'fill-current' : 'text-slate-400'}`} />
+            <span>Favoritos</span>
+          </button>
 
           {/* Sort Selector */}
           <div className="relative flex items-center">
             <select
               value={sortKey}
               onChange={(e) => onSortChange(e.target.value as PropertySortKey)}
-              className="h-11 appearance-none rounded-xl border border-slate-200 bg-white pl-8 pr-8 text-xs sm:text-sm font-medium text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              className="h-9 appearance-none rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 pl-7 pr-3 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs focus:outline-none"
             >
-              <option value="mediaCasal_desc">Média do Casal (Maior)</option>
+              <option value="mediaCasal_desc">Ordenar: Média do Casal</option>
               <option value="notaSaymon_desc">Preferidos do Saymon 🧔</option>
               <option value="notaKelly_desc">Preferidos da Kelly 👩</option>
               <option value="precoTotal_asc">Menor Custo Total</option>
@@ -171,121 +183,92 @@ export function FilterBar({
               <option value="precoM2_asc">Menor R$/m²</option>
               <option value="tempoSaymon_asc">Mais Perto do Saymon 🧔</option>
               <option value="tempoKelly_asc">Mais Perto da Kelly 👩</option>
-              <option value="mediaTempo_asc">Menor Média Deslocamento 💑</option>
+              <option value="mediaTempo_asc">Menor Deslocamento 💑</option>
               <option value="area_desc">Maior Área (m²)</option>
               <option value="recente_desc">Mais Recentes</option>
             </select>
-            <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
           </div>
 
-          {/* Toggle Advanced Filters Button */}
+          {/* Toggle Advanced Filters Drawer Button */}
           <Button
             variant={showAdvanced || hasActiveFilters ? 'secondary' : 'outline'}
             size="sm"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="h-11 rounded-xl px-3 relative"
+            className="h-9 rounded-xl px-3 text-xs font-bold relative"
           >
-            <SlidersHorizontal className="h-4 w-4 mr-1.5 text-slate-500 dark:text-slate-400" />
-            <span className="text-xs sm:text-sm">Filtros</span>
-            {hasActiveFilters && (
-              <span className="ml-1.5 flex h-2 w-2 rounded-full bg-blue-600" />
-            )}
+            <SlidersHorizontal className="h-3.5 w-3.5 mr-1 text-slate-500" />
+            <span>Filtros</span>
+            {hasActiveFilters && <span className="ml-1 flex h-2 w-2 rounded-full bg-indigo-600" />}
           </Button>
 
-          {/* View Mode Toggle: Grid vs Table */}
-          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-900">
+          {/* Clear Filters CTA */}
+          {hasActiveFilters && (
             <button
+              type="button"
+              onClick={clearAllFilters}
+              className="h-9 px-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+              title="Limpar todos os filtros"
+            >
+              <X className="h-3.5 w-3.5" />
+              <span>Limpar</span>
+            </button>
+          )}
+
+          {/* View Mode Toggle: Grid vs Table */}
+          <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 p-0.5 ml-1">
+            <button
+              type="button"
               onClick={() => onViewModeChange('grid')}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
               title="Visualização em Cards"
-              aria-label="Visualização em Cards"
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => onViewModeChange('table')}
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all ${
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
                 viewMode === 'table'
-                  ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-400'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
               title="Visualização em Tabela"
-              aria-label="Visualização em Tabela"
             >
-              <Table className="h-4 w-4" />
+              <Table className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Status Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <button
-          onClick={() => handleStatusChange('todos')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap ${
-            filters.status === 'todos'
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-400 dark:hover:bg-slate-800'
-          }`}
-        >
-          Todos ({totalOverall})
-        </button>
-
-        {(['Para Analisar', 'Agendar Visita', 'Visita Agendada', 'Pendente Avaliação', 'Proposta Enviada', 'Descartado'] as PropertyStatus[]).map(
-          (status) => {
-            const isSelected = filters.status === status;
-            return (
-              <button
-                key={status}
-                onClick={() => handleStatusChange(status)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap border ${
-                  isSelected
-                    ? `${STATUS_CONFIG[status].bg} ${STATUS_CONFIG[status].border} ${STATUS_CONFIG[status].text} font-semibold shadow-sm`
-                    : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                {status}
-              </button>
-            );
-          }
-        )}
-
-        {hasActiveFilters && (
-          <button
-            onClick={clearAllFilters}
-            className="text-xs text-rose-600 dark:text-rose-400 hover:underline ml-2 whitespace-nowrap flex items-center gap-1 font-medium"
-          >
-            <X className="h-3 w-3" /> Limpar filtros
-          </button>
-        )}
-      </div>
-
-      {/* Advanced Filter Panel */}
+      {/* Advanced Filter Drawer (Opens on clicking Filtros) */}
       {showAdvanced && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 animate-fade-in">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-indigo-600" />
               Filtros Avançados
-            </h4>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Exibindo {totalFiltered} de {totalOverall} imóveis
             </span>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(false)}
+              className="text-xs text-slate-400 hover:text-slate-600"
+            >
+              Fechar ✕
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Custo Total Máximo */}
-            <div>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5 block">
-                Custo Total Máximo (R$)
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {/* Teto de Custo Total */}
+            <div className="space-y-1">
+              <label className="font-bold text-slate-600 dark:text-slate-400">
+                Teto Custo Total (Aluguel+Cond+IPTU)
               </label>
-              <Input
-                type="number"
-                placeholder="Ex: 5000"
+              <select
                 value={filters.precoMax || ''}
                 onChange={(e) =>
                   onFilterChange({
@@ -293,14 +276,21 @@ export function FilterBar({
                     precoMax: e.target.value ? Number(e.target.value) : undefined,
                   })
                 }
-                className="h-9"
-              />
+                className="w-full h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 font-semibold text-slate-800 dark:text-slate-200"
+              >
+                <option value="">Sem limite de preço</option>
+                <option value="4000">Até R$ 4.000 / mês</option>
+                <option value="4500">Até R$ 4.500 / mês</option>
+                <option value="5000">Até R$ 5.000 / mês (Recomendado)</option>
+                <option value="5500">Até R$ 5.500 / mês</option>
+                <option value="6000">Até R$ 6.000 / mês</option>
+              </select>
             </div>
 
-            {/* Mínimo de Quartos */}
-            <div>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5 block">
-                Mínimo de Quartos
+            {/* Mínimo Dormitórios */}
+            <div className="space-y-1">
+              <label className="font-bold text-slate-600 dark:text-slate-400">
+                Mínimo de Dormitórios
               </label>
               <select
                 value={filters.dormitoriosMin || ''}
@@ -310,20 +300,19 @@ export function FilterBar({
                     dormitoriosMin: e.target.value ? Number(e.target.value) : undefined,
                   })
                 }
-                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="w-full h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 font-semibold text-slate-800 dark:text-slate-200"
               >
                 <option value="">Qualquer quantidade</option>
-                <option value="1">1+ quarto</option>
-                <option value="2">2+ quartos</option>
-                <option value="3">3+ quartos</option>
-                <option value="4">4+ quartos</option>
+                <option value="2">2+ Quartos</option>
+                <option value="3">3+ Quartos (Recomendado)</option>
+                <option value="4">4+ Quartos</option>
               </select>
             </div>
 
-            {/* Mínimo de Vagas */}
-            <div>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5 block">
-                Mínimo de Vagas
+            {/* Mínimo Vagas */}
+            <div className="space-y-1">
+              <label className="font-bold text-slate-600 dark:text-slate-400">
+                Mínimo de Vagas de Garagem
               </label>
               <select
                 value={filters.vagasMin || ''}
@@ -333,19 +322,18 @@ export function FilterBar({
                     vagasMin: e.target.value ? Number(e.target.value) : undefined,
                   })
                 }
-                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="w-full h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 font-semibold text-slate-800 dark:text-slate-200"
               >
                 <option value="">Qualquer quantidade</option>
-                <option value="1">1+ vaga</option>
-                <option value="2">2+ vagas</option>
-                <option value="3">3+ vagas</option>
+                <option value="1">1+ Vaga</option>
+                <option value="2">2+ Vagas (Recomendado)</option>
               </select>
             </div>
 
-            {/* Tempo Máximo até o Trabalho */}
-            <div>
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5 block">
-                Tempo Máximo ao Trabalho
+            {/* Máximo Deslocamento */}
+            <div className="space-y-1">
+              <label className="font-bold text-slate-600 dark:text-slate-400">
+                Máximo Média Deslocamento
               </label>
               <select
                 value={filters.tempoMaxTrabalho || ''}
@@ -355,22 +343,21 @@ export function FilterBar({
                     tempoMaxTrabalho: e.target.value ? Number(e.target.value) : undefined,
                   })
                 }
-                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="w-full h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-2.5 font-semibold text-slate-800 dark:text-slate-200"
               >
-                <option value="">Sem limite de tempo</option>
-                <option value="15">Até 15 minutos</option>
+                <option value="">Qualquer tempo</option>
+                <option value="20">Até 20 minutos</option>
                 <option value="30">Até 30 minutos</option>
                 <option value="45">Até 45 minutos</option>
-                <option value="60">Até 1 hora</option>
               </select>
             </div>
           </div>
 
-          {/* Differentials Multi-Select Tags */}
-          <div>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2 block">
-              Diferenciais Desejados (exige todos os selecionados):
-            </label>
+          {/* Diferenciais Pills */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+            <span className="text-[11px] font-extrabold uppercase text-slate-400 block">
+              Diferenciais do Imóvel:
+            </span>
             <div className="flex flex-wrap gap-1.5">
               {AVAILABLE_DIFFERENTIALS.map((tag) => {
                 const isSelected = (filters.diferenciais || []).includes(tag);
@@ -379,14 +366,13 @@ export function FilterBar({
                     key={tag}
                     type="button"
                     onClick={() => handleToggleDifferential(tag)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                       isSelected
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                     }`}
                   >
-                    {isSelected && <Check className="h-3 w-3" />}
-                    {tag}
+                    {tag} {isSelected && '✓'}
                   </button>
                 );
               })}

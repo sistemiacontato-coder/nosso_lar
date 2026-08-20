@@ -359,49 +359,79 @@ export function useProperties() {
   // Filtering for Nossos Imóveis
   const filteredProperties = useMemo(() => {
     return nossosImoveis.filter((prop) => {
+      // 1. Search Query
       if (filters.search) {
-        const query = filters.search.toLowerCase();
-        const matchesTitle = prop.titulo.toLowerCase().includes(query);
-        const matchesBairro = prop.bairro.toLowerCase().includes(query);
+        const query = filters.search.toLowerCase().trim();
+        const matchesTitle = prop.titulo?.toLowerCase().includes(query);
+        const matchesBairro = prop.bairro?.toLowerCase().includes(query);
         const matchesEndereco = prop.endereco?.toLowerCase().includes(query);
         const matchesSaymon = prop.opiniaoSaymon?.toLowerCase().includes(query);
         const matchesKelly = prop.opiniaoKelly?.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesBairro && !matchesEndereco && !matchesSaymon && !matchesKelly) {
+        const matchesObs = prop.observacoes?.toLowerCase().includes(query);
+        const matchesCorretor = prop.nomeCorretor?.toLowerCase().includes(query);
+        const matchesDiferenciais = (prop.diferenciais || []).some((d) => d.toLowerCase().includes(query));
+
+        if (
+          !matchesTitle &&
+          !matchesBairro &&
+          !matchesEndereco &&
+          !matchesSaymon &&
+          !matchesKelly &&
+          !matchesObs &&
+          !matchesCorretor &&
+          !matchesDiferenciais
+        ) {
           return false;
         }
       }
 
-      if (filters.status !== 'todos' && prop.status !== filters.status) {
+      // 2. Status Filter
+      if (filters.status && filters.status !== 'todos' && prop.status !== filters.status) {
         return false;
       }
 
+      // 3. Preço Máximo (Custo Total Mensal = Aluguel + Condomínio + IPTU)
       if (filters.precoMax && prop.custoTotalMensal > filters.precoMax) {
         return false;
       }
 
+      // 4. Mínimo de Dormitórios
       if (filters.dormitoriosMin && prop.dormitorios < filters.dormitoriosMin) {
         return false;
       }
 
+      // 5. Mínimo de Vagas
       if (filters.vagasMin && prop.vagasGaragem < filters.vagasMin) {
         return false;
       }
 
+      // 6. Apenas Favoritos
       if (filters.apenasFavoritos && !prop.isFavorito) {
         return false;
       }
 
-      if (filters.apenasMatchPerfeito && (prop.notaSaymon < 5 || prop.notaKelly < 5)) {
-        return false;
+      // 7. Match Perfeito (Avaliação de Saymon >= 4 e Kelly >= 4 ou Aprovados)
+      if (filters.apenasMatchPerfeito) {
+        const saymonOk = (prop.notaSaymon && prop.notaSaymon >= 4) || prop.vereditoSaymon === 'Aprovado';
+        const kellyOk = (prop.notaKelly && prop.notaKelly >= 4) || prop.vereditoKelly === 'Aprovada';
+        if (!saymonOk || !kellyOk) return false;
       }
 
-      if (filters.tempoMaxTrabalho && prop.tempoAteTrabalhoMinutos > filters.tempoMaxTrabalho) {
-        return false;
+      // 8. Tempo Máximo de Deslocamento
+      if (filters.tempoMaxTrabalho) {
+        const avgCommute =
+          prop.tempoSaymonMinutos && prop.tempoKellyMinutos
+            ? (prop.tempoSaymonMinutos + prop.tempoKellyMinutos) / 2
+            : prop.tempoAteTrabalhoMinutos || 0;
+
+        if (avgCommute > filters.tempoMaxTrabalho) return false;
       }
 
+      // 9. Diferenciais Selecionados
       if (filters.diferenciais && filters.diferenciais.length > 0) {
+        const propTagsLower = (prop.diferenciais || []).map((t) => t.toLowerCase());
         const hasAllTags = filters.diferenciais.every((tag) =>
-          prop.diferenciais.includes(tag)
+          propTagsLower.some((pt) => pt.includes(tag.toLowerCase()) || tag.toLowerCase().includes(pt))
         );
         if (!hasAllTags) return false;
       }
