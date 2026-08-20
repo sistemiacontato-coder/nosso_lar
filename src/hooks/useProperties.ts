@@ -522,6 +522,7 @@ export function useProperties() {
     updateStatus,
     toggleFavorite,
     toggleArchiveProperty,
+    recalculateCommuteTimes,
     resetToSampleData,
     kpis,
   };

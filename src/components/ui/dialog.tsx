@@ -43,7 +43,7 @@ export function Dialog({ open, onOpenChange, children, maxWidth = 'lg' }: Dialog
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
@@ -52,13 +52,13 @@ export function Dialog({ open, onOpenChange, children, maxWidth = 'lg' }: Dialog
       {/* Content */}
       <div
         className={cn(
-          'relative w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-2xl z-10 transition-all max-h-[90vh] overflow-y-auto',
+          'relative w-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xl z-10 transition-all max-h-[92vh] overflow-y-auto',
           maxWidths[maxWidth]
         )}
       >
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-full p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="absolute right-4 top-4 z-20 rounded-full p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           aria-label="Fechar"
         >
           <X className="h-5 w-5" />
@@ -76,7 +76,7 @@ export function DialogHeader({
   return (
     <div
       className={cn(
-        'flex flex-col space-y-1.5 text-center sm:text-left pb-4 border-b border-slate-100 dark:border-slate-800 mb-5',
+        'flex flex-col space-y-1.5 text-center sm:text-left pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 shrink-0',
         className
       )}
       {...props}
@@ -91,7 +91,7 @@ export function DialogTitle({
   return (
     <h2
       className={cn(
-        'text-xl font-bold leading-none tracking-tight text-slate-900 dark:text-white',
+        'text-lg sm:text-xl font-black leading-snug tracking-tight text-slate-900 dark:text-white pr-6',
         className
       )}
       {...props}
@@ -105,7 +105,7 @@ export function DialogDescription({
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn('text-sm text-slate-500 dark:text-slate-400 mt-1', className)}
+      className={cn('text-xs text-slate-500 dark:text-slate-400 mt-1', className)}
       {...props}
     />
   );
@@ -118,7 +118,7 @@ export function DialogFooter({
   return (
     <div
       className={cn(
-        'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-5 border-t border-slate-100 dark:border-slate-800 mt-6',
+        'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 shrink-0',
         className
       )}
       {...props}

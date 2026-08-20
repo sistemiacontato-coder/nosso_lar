@@ -250,13 +250,13 @@ export function PropertyTableView({
                           type="button"
                           onClick={() => onSelectDetails(prop)}
                           className="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left line-clamp-1 transition-colors"
-                          title={prop.titulo}
+                          title={decodeHtmlEntities(prop.titulo)}
                         >
-                          {prop.titulo}
+                          {decodeHtmlEntities(prop.titulo)}
                         </button>
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
                           <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
-                          <span className="truncate">{prop.bairro}</span>
+                          <span className="truncate">{decodeHtmlEntities(prop.bairro)}</span>
                           {prop.urlAnuncio && (
                             <a
                               href={prop.urlAnuncio}

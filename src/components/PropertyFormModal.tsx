@@ -237,9 +237,17 @@ export function PropertyFormModal({
     }
   };
 
-  // Recalculate commute based on address / location selection
+  // Recalculate commute based on address / location selection with house number preservation
   const handleSelectAddressSuggestion = (item: any) => {
-    const display = item.display_name.split(',')[0] || item.display_name;
+    const rawInput = watch('endereco') || '';
+    const numberMatch = rawInput.match(/(?:[,\s]+|^)(\d+)(?:\s+.*)?$/) || rawInput.match(/\b\d{1,5}\b/);
+    const houseNum = numberMatch ? numberMatch[1] : null;
+
+    let display = item.display_name.split(',')[0] || item.display_name;
+    if (houseNum && !display.includes(houseNum)) {
+      display = `${display}, ${houseNum}`;
+    }
+
     setValue('endereco', display, { shouldValidate: true });
     setAddressSuggestions([]);
 
@@ -247,9 +255,6 @@ export function PropertyFormModal({
     const lat = parseFloat(item.lat);
     const lon = parseFloat(item.lon);
 
-    // Approximate reference points (Saymon Work & Kelly Work)
-    // Saymon Paulista approx: -23.56, -46.65
-    // Kelly Faria Lima approx: -23.58, -46.68
     if (lat && lon) {
       const saymonDist = Math.hypot(lat - (-23.561), lon - (-46.655)) * 111; // km
       const kellyDist = Math.hypot(lat - (-23.582), lon - (-46.681)) * 111; // km
@@ -542,9 +547,8 @@ export function PropertyFormModal({
 
             {/* Endereço com Busca Automática Google / Nominatim */}
             <div className="space-y-1.5 relative">
-              <Label htmlFor="endereco" className="flex items-center justify-between">
-                <span>Endereço Completo (Autopreencher)</span>
-                <span className="text-[10px] text-indigo-500 font-semibold">📍 Recalcula Deslocamento</span>
+              <Label htmlFor="endereco">
+                Endereço Completo / Referência
               </Label>
               <div className="relative">
                 <Input

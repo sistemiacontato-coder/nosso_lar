@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Home, Plus, ArrowLeftRight, Heart, LogOut, UserCheck, Sparkles } from 'lucide-react';
+import { Home, Plus, ArrowLeftRight, Heart, LogOut, UserCheck, Sparkles, User, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ui/theme-toggle';
 import { Badge } from './ui/badge';
@@ -11,7 +11,7 @@ interface NavbarProps {
   onOpenNewProperty: () => void;
   onOpenComparison?: () => void;
   onOpenSettings?: () => void;
-  onOpenRealtorModal?: () => void;
+  onOpenCommuteAnchorsModal?: () => void;
   compareCount?: number;
   totalCount?: number;
   sugestoesCount?: number;
@@ -21,6 +21,7 @@ export function Navbar({
   onOpenNewProperty,
   onOpenComparison,
   onOpenSettings,
+  onOpenCommuteAnchorsModal,
   compareCount = 0,
   totalCount = 0,
 }: NavbarProps) {
@@ -39,11 +40,19 @@ export function Navbar({
               <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
                 Nosso <span className="text-rose-600 dark:text-rose-400">Lar</span>
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 text-[11px] font-bold text-rose-600 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60">
-                <Heart className="h-2.5 w-2.5 fill-rose-500 text-rose-500" /> Saymon & Kelly
-              </span>
 
-              {/* Total Count Pill inside Navbar as requested */}
+              {/* Saymon & Kelly Profile Badge - Click opens Fixed Interest Addresses (Perfil do Casal) */}
+              <button
+                type="button"
+                onClick={onOpenCommuteAnchorsModal}
+                className="inline-flex items-center gap-1 rounded-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 px-2.5 py-0.5 text-[11px] font-bold text-rose-600 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60 transition-all cursor-pointer shadow-xs"
+                title="Clique para editar o Perfil do Casal e Endereços de Interesse Fixos"
+              >
+                <Heart className="h-2.5 w-2.5 fill-rose-500 text-rose-500" />
+                <span>Saymon & Kelly (Perfil)</span>
+              </button>
+
+              {/* Total Count Pill inside Navbar */}
               <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                 <Sparkles className="h-3 w-3" />
                 {totalCount} {totalCount === 1 ? 'imóvel cotado' : 'imóveis cotados'}
@@ -76,7 +85,18 @@ export function Navbar({
           {/* Theme Switcher */}
           <ThemeToggle />
 
-          {/* Settings AI Button (Masterdev / Saymon) */}
+          {/* Public Realtor Portal Shortcut Icon (ao lado do modo escuro) */}
+          <a
+            href="/corretor"
+            target="_blank"
+            rel="noreferrer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all shadow-xs"
+            title="Atalho para o Modo Corretor (nosso-lar-wine.vercel.app/corretor)"
+          >
+            <span className="text-base" role="img" aria-label="Modo Corretor">👔</span>
+          </a>
+
+          {/* Settings AI Button */}
           {onOpenSettings && (
             <Button
               variant="outline"

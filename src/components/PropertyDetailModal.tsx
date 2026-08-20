@@ -128,10 +128,10 @@ export function PropertyDetailModal({
 
           <div className="absolute bottom-4 left-4 right-4 text-white">
             <span className="inline-block rounded bg-black/50 backdrop-blur-md px-2.5 py-1 text-xs font-semibold mb-1.5">
-              {property.bairro} {property.endereco ? `• ${property.endereco}` : ''}
+              {decodeHtmlEntities(property.bairro)} {property.endereco ? `• ${property.endereco}` : ''}
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-white drop-shadow-md">
-              {property.titulo}
+              {decodeHtmlEntities(property.titulo)}
             </h2>
           </div>
         </div>

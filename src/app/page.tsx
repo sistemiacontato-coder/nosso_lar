@@ -46,6 +46,7 @@ function DashboardContent() {
     updateStatus,
     toggleFavorite,
     toggleArchiveProperty,
+    recalculateCommuteTimes,
     resetToSampleData,
     kpis,
   } = useProperties();
@@ -113,8 +114,10 @@ function DashboardContent() {
       <Navbar
         onOpenNewProperty={handleOpenNew}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenRealtorModal={() => setIsRealtorOpen(true)}
+        onOpenCommuteAnchorsModal={() => setIsCommuteModalOpen(true)}
         sugestoesCount={sugestoesCount}
+        totalCount={totalCount}
+        compareCount={selectedForComparison.length}
       />
 
       {/* Settings Modal */}
@@ -128,10 +131,11 @@ function DashboardContent() {
         existingProperties={properties}
       />
 
-      {/* Commute Anchors Modal */}
+      {/* Commute Anchors Modal (Perfil do Casal) */}
       <CommuteAnchorsModal
         open={isCommuteModalOpen}
         onOpenChange={setIsCommuteModalOpen}
+        onSave={recalculateCommuteTimes}
       />
 
       {/* Main SaaS Width Container */}
