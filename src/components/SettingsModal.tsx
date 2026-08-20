@@ -10,13 +10,14 @@ import {
   Zap,
   ArrowLeftRight,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v6';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v7';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
@@ -34,33 +35,6 @@ export interface AIConfig {
   fallback: AISingleConfig;
 }
 
-export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> = {
-  gemini: [
-    { id: 'gemini-1.5-flash', name: 'Google Gemini 1.5 Flash (Super Rápido)' },
-    { id: 'gemini-1.5-pro', name: 'Google Gemini 1.5 Pro (Raciocínio Profundo)' },
-    { id: 'gemini-2.0-flash-exp', name: 'Google Gemini 2.0 Flash (Experimental)' },
-  ],
-  openai: [
-    { id: 'gpt-4o-mini', name: 'OpenAI GPT-4o Mini' },
-    { id: 'gpt-4o', name: 'OpenAI GPT-4o' },
-    { id: 'gpt-3.5-turbo', name: 'OpenAI GPT-3.5 Turbo' },
-  ],
-  groq: [
-    { id: 'llama-3.3-70b-versatile', name: 'Groq Llama 3.3 70B Versatile (Recomendado)' },
-    { id: 'llama-3.1-8b-instant', name: 'Groq Llama 3.1 8B Instant (Ultra Rápido)' },
-    { id: 'deepseek-r1-distill-llama-70b', name: 'Groq DeepSeek R1 Distill 70B (Raciocínio)' },
-    { id: 'llama-3.2-11b-vision-preview', name: 'Groq Llama 3.2 11B Vision' },
-    { id: 'llama-3.2-90b-vision-preview', name: 'Groq Llama 3.2 90B Vision' },
-    { id: 'mixtral-8x7b-32768', name: 'Groq Mixtral 8x7B' },
-    { id: 'gemma2-9b-it', name: 'Groq Gemma 2 9B' },
-    { id: 'qwen-2.5-coder-32b', name: 'Groq Qwen 2.5 Coder 32B' },
-  ],
-  custom: [
-    { id: 'deepseek-chat', name: 'DeepSeek V3' },
-    { id: 'custom-model', name: 'Modelo Personalizado' },
-  ],
-};
-
 export const DEFAULT_CONFIG: AIConfig = {
   enableAI: true,
   enableFallback: true,
@@ -76,7 +50,6 @@ export const DEFAULT_CONFIG: AIConfig = {
   },
 };
 
-// Robust Auto Detection Function for API Keys
 export function detectProvider(key: string): AIProvider {
   const cleanKey = key.trim();
   if (!cleanKey) return 'gemini';
@@ -93,7 +66,6 @@ export function detectProvider(key: string): AIProvider {
     return 'gemini';
   }
 
-  // Default fallback if unknown key format
   return 'gemini';
 }
 
@@ -129,21 +101,44 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [config, setConfig] = useState<AIConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
 
-  const [testingPrimary, setTestingPrimary] = useState(false);
+  // Validation & Live Dynamic Models Fetching States
+  const [validatingPrimary, setValidatingPrimary] = useState(false);
+  const [primaryValidated, setPrimaryValidated] = useState(false);
+  const [primaryModels, setPrimaryModels] = useState<{ id: string; name: string }[]>([]);
   const [primaryStatus, setPrimaryStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const [testingFallback, setTestingFallback] = useState(false);
+  const [validatingFallback, setValidatingFallback] = useState(false);
+  const [fallbackValidated, setFallbackValidated] = useState(false);
+  const [fallbackModels, setFallbackModels] = useState<{ id: string; name: string }[]>([]);
   const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
     if (open) {
-      setConfig(getStoredAIConfig());
-      setPrimaryStatus(null);
-      setFallbackStatus(null);
+      const stored = getStoredAIConfig();
+      setConfig(stored);
+
+      // Auto-validate existing keys on open
+      if (stored.primary.apiKey) {
+        setPrimaryValidated(true);
+        fetchModelsForKey(stored.primary.apiKey, 'primary', stored.primary.model);
+      } else {
+        setPrimaryValidated(false);
+      }
+
+      if (stored.fallback.apiKey) {
+        setFallbackValidated(true);
+        fetchModelsForKey(stored.fallback.apiKey, 'fallback', stored.fallback.model);
+      } else {
+        setFallbackValidated(false);
+      }
     }
   }, [open]);
 
   const currentSection = activeTab === 'primary' ? config.primary : config.fallback;
+  const isValidated = activeTab === 'primary' ? primaryValidated : fallbackValidated;
+  const currentModels = activeTab === 'primary' ? primaryModels : fallbackModels;
+  const isValidating = activeTab === 'primary' ? validatingPrimary : validatingFallback;
+  const currentStatus = activeTab === 'primary' ? primaryStatus : fallbackStatus;
 
   const updateCurrentSection = (updates: Partial<AISingleConfig>) => {
     setConfig((prev) => ({
@@ -161,109 +156,133 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       primary: prev.fallback,
       fallback: prev.primary,
     }));
+    // Swap validated states
+    const tempVal = primaryValidated;
+    setPrimaryValidated(fallbackValidated);
+    setFallbackValidated(tempVal);
+
+    const tempModels = primaryModels;
+    setPrimaryModels(fallbackModels);
+    setFallbackModels(tempModels);
+
     setPrimaryStatus(null);
     setFallbackStatus(null);
   };
 
-  // Auto detect provider by key prefix & sync model
-  const handleKeyChange = (val: string) => {
+  const handleKeyInputChange = (val: string) => {
     const key = val.trim();
     const provider = detectProvider(key);
-    const availableModels = DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
-    
-    // Pick first available model for detected provider if previous model belonged to another provider
-    const isCurrentModelValid = availableModels.some((m) => m.id === currentSection.model);
-    const model = isCurrentModelValid ? currentSection.model : availableModels[0].id;
+
+    if (activeTab === 'primary') setPrimaryValidated(false);
+    else setFallbackValidated(false);
 
     updateCurrentSection({
       apiKey: key,
       provider,
-      model,
     });
   };
 
-  // Test Connection directly via API provider models endpoint
-  const handleTestConnection = async (target: 'primary' | 'fallback') => {
-    const targetCfg = target === 'primary' ? config.primary : config.fallback;
-    const key = targetCfg.apiKey.trim();
+  // Live Model Fetcher and Key Connection Validator
+  const fetchModelsForKey = async (key: string, target: 'primary' | 'fallback', initialModelSelect?: string) => {
+    if (!key.trim()) return;
 
-    if (!key) {
-      const resErr = { ok: false, msg: 'Informe a Chave API primeiro.' };
-      if (target === 'primary') setPrimaryStatus(resErr);
-      else setFallbackStatus(resErr);
-      return;
-    }
+    if (target === 'primary') setValidatingPrimary(true);
+    else setValidatingFallback(true);
 
-    const detected = detectProvider(key);
-
-    if (target === 'primary') setTestingPrimary(true);
-    else setTestingFallback(true);
-
+    const detectedProvider = detectProvider(key);
     const start = Date.now();
 
     try {
-      let isOk = false;
-      const providerName = detected.toUpperCase();
+      let models: { id: string; name: string }[] = [];
 
-      if (detected === 'gemini') {
+      if (detectedProvider === 'gemini') {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-        isOk = res.ok;
-      } else if (detected === 'openai') {
+        if (!res.ok) throw new Error('Chave inválida ou erro na API do Google.');
+        const data = await res.json();
+        if (data.models && Array.isArray(data.models)) {
+          models = data.models
+            .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+            .map((m: any) => {
+              const cleanId = m.name.replace('models/', '');
+              return { id: cleanId, name: cleanId };
+            });
+        }
+      } else if (detectedProvider === 'openai') {
         const res = await fetch('https://api.openai.com/v1/models', {
           headers: { Authorization: `Bearer ${key}` },
         });
-        isOk = res.ok;
-      } else if (detected === 'groq') {
+        if (!res.ok) throw new Error('Chave inválida ou erro na API OpenAI.');
+        const data = await res.json();
+        if (data.data && Array.isArray(data.data)) {
+          models = data.data
+            .filter((m: any) => m.id.includes('gpt'))
+            .map((m: any) => ({ id: m.id, name: m.id }));
+        }
+      } else if (detectedProvider === 'groq') {
         const res = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { Authorization: `Bearer ${key}` },
         });
-        isOk = res.ok;
-      } else {
-        isOk = true;
+        if (!res.ok) throw new Error('Chave inválida ou erro na API Groq.');
+        const data = await res.json();
+        if (data.data && Array.isArray(data.data)) {
+          models = data.data.map((m: any) => ({ id: m.id, name: m.id }));
+        }
+      }
+
+      if (models.length === 0) {
+        models = [
+          { id: 'gemini-1.5-flash', name: 'gemini-1.5-flash' },
+          { id: 'llama-3.3-70b-versatile', name: 'llama-3.3-70b-versatile' },
+          { id: 'gpt-4o-mini', name: 'gpt-4o-mini' },
+        ];
       }
 
       const latency = Date.now() - start;
+      const statusObj = { ok: true, msg: `Conexão Validada (${latency}ms)` };
 
-      if (isOk) {
-        // Sync provider state if needed
-        updateCurrentSection({ provider: detected });
-        const resOk = { ok: true, msg: `Conectado ao ${providerName} (${latency}ms)` };
-        if (target === 'primary') setPrimaryStatus(resOk);
-        else setFallbackStatus(resOk);
+      if (target === 'primary') {
+        setPrimaryValidated(true);
+        setPrimaryModels(models);
+        setPrimaryStatus(statusObj);
       } else {
-        throw new Error(`Falha de autenticação na API do ${providerName}`);
+        setFallbackValidated(true);
+        setFallbackModels(models);
+        setFallbackStatus(statusObj);
       }
+
+      // Auto pick model if not set or not in list
+      const chosenModel = initialModelSelect || (models[0] ? models[0].id : '');
+      setConfig((prev) => ({
+        ...prev,
+        [target]: {
+          ...prev[target],
+          provider: detectedProvider,
+          model: chosenModel,
+        },
+      }));
     } catch (err: any) {
-      const resErr = { ok: false, msg: err.message || 'Erro ao conectar com a IA.' };
-      if (target === 'primary') setPrimaryStatus(resErr);
-      else setFallbackStatus(resErr);
+      const statusObj = { ok: false, msg: err.message || 'Falha ao validar chave.' };
+      if (target === 'primary') {
+        setPrimaryValidated(false);
+        setPrimaryStatus(statusObj);
+      } else {
+        setFallbackValidated(false);
+        setFallbackStatus(statusObj);
+      }
     } finally {
-      if (target === 'primary') setTestingPrimary(false);
-      else setTestingFallback(false);
+      if (target === 'primary') setValidatingPrimary(false);
+      else setValidatingFallback(false);
     }
+  };
+
+  const handleValidateClick = () => {
+    fetchModelsForKey(currentSection.apiKey, activeTab);
   };
 
   const handleSave = () => {
     saveStoredAIConfig(config);
     onOpenChange(false);
   };
-
-  const getProviderBadge = (provider: AIProvider) => {
-    switch (provider) {
-      case 'gemini':
-        return 'Google Gemini ♊';
-      case 'openai':
-        return 'OpenAI GPT 🤖';
-      case 'groq':
-        return 'Groq Llama ⚡';
-      case 'custom':
-      default:
-        return 'Custom AI 🛠️';
-    }
-  };
-
-  const detectedProvider = detectProvider(currentSection.apiKey);
-  const modelsList = DEFAULT_MODELS[detectedProvider] || DEFAULT_MODELS.gemini;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} maxWidth="lg">
@@ -275,7 +294,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
-                Inteligência Artificial & Redundância
+                Configuração de Inteligência Artificial
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Se o 1º Leitor falhar, o 2º Leitor entra em ação automaticamente.
@@ -285,7 +304,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </DialogHeader>
 
         <div className="py-4 space-y-4">
-          {/* Redundancy Toggle */}
+          {/* Redundancy Switch */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
@@ -304,7 +323,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </label>
           </div>
 
-          {/* Reader Selector Tabs */}
+          {/* Reader Tab Switcher */}
           <div className="flex items-center justify-between gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
             <div className="flex gap-1 flex-1">
               <button
@@ -317,7 +336,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 }`}
               >
                 <span>1º Leitor (Principal)</span>
-                {config.primary.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                {primaryValidated && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
               </button>
 
               <button
@@ -330,7 +349,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 }`}
               >
                 <span>2º Leitor (Fallback)</span>
-                {config.fallback.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                {fallbackValidated && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
               </button>
             </div>
 
@@ -346,95 +365,84 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </Button>
           </div>
 
-          {/* Clean Reader Form with Auto Detected Provider */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {activeTab === 'primary' ? 'Configuração do 1º Leitor' : 'Configuração do 2º Leitor'}
-              </span>
-              {currentSection.apiKey && (
-                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                  {getProviderBadge(detectedProvider)}
-                </span>
-              )}
-            </div>
-
-            {/* API Key Input */}
-            <div className="space-y-1">
+          {/* Clean & Discreet Reader Form */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+            {/* Field 1: API Key */}
+            <div className="space-y-1.5">
               <Label htmlFor="apiKey" className="text-xs font-semibold">
-                Chave da API (API Key)
+                Chave da API
               </Label>
               <div className="relative">
                 <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   id="apiKey"
                   type="text"
-                  placeholder="Cole sua chave API (Gemini: AIza... / AQ... | Groq: gsk_... | OpenAI: sk-...)"
+                  placeholder="Insira a sua Chave da API..."
                   value={currentSection.apiKey}
-                  onChange={(e) => handleKeyChange(e.target.value)}
+                  onChange={(e) => handleKeyInputChange(e.target.value)}
                   className="pl-9 text-xs font-mono"
                 />
               </div>
             </div>
 
-            {/* Model Selector (Syncs automatically with detected provider) */}
-            <div className="space-y-1">
-              <Label htmlFor="model" className="text-xs font-semibold">
-                Modelo da Inteligência Artificial ({getProviderBadge(detectedProvider)})
-              </Label>
-              <select
-                id="model"
-                value={currentSection.model}
-                onChange={(e) => updateCurrentSection({ model: e.target.value, provider: detectedProvider })}
-                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
-              >
-                {modelsList.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Test Connection Button & Discrete Status Feedback */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+            {/* Field 2: Button to Test/Validate & Fetch Dynamic Models */}
+            <div className="flex items-center justify-between pt-1">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleTestConnection(activeTab)}
-                disabled={activeTab === 'primary' ? testingPrimary : testingFallback}
-                className="h-8 text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50"
+                onClick={handleValidateClick}
+                disabled={isValidating || !currentSection.apiKey.trim()}
+                className="h-8 px-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
               >
-                {(activeTab === 'primary' ? testingPrimary : testingFallback) ? (
+                {isValidating ? (
                   <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Testando...
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Validando...
                   </>
                 ) : (
                   <>
-                    <Zap className="mr-1.5 h-3.5 w-3.5" /> Testar Conexão
+                    <Zap className="mr-1.5 h-3.5 w-3.5" /> Validar & Buscar Modelos
                   </>
                 )}
               </Button>
 
-              {/* Discreet Status Result */}
-              {(activeTab === 'primary' ? primaryStatus : fallbackStatus) && (
+              {/* Discreet Status Feedback */}
+              {currentStatus && (
                 <span
-                  className={`text-xs font-medium flex items-center gap-1.5 ${
-                    (activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok
+                  className={`text-xs flex items-center gap-1.5 ${
+                    currentStatus.ok
                       ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
                       : 'text-rose-500 font-semibold'
                   }`}
                 >
-                  {(activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok ? (
+                  {currentStatus.ok ? (
                     <CheckCircle2 className="h-4 w-4" />
                   ) : (
                     <AlertCircle className="h-4 w-4" />
                   )}
-                  {(activeTab === 'primary' ? primaryStatus : fallbackStatus)?.msg}
+                  {currentStatus.msg}
                 </span>
               )}
             </div>
+
+            {/* Field 3: Dynamic Model Selector (Appears ONLY after Validation!) */}
+            {isValidated && currentModels.length > 0 && (
+              <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+                <Label htmlFor="model" className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Modelos Disponíveis da Chave
+                </Label>
+                <select
+                  id="model"
+                  value={currentSection.model}
+                  onChange={(e) => updateCurrentSection({ model: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
+                >
+                  {currentModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
