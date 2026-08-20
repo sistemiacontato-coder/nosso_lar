@@ -373,13 +373,18 @@ export function PropertyTableView({
                     {/* SAYMON COMPACT BADGE */}
                     <td className="py-3 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
-                        value={prop.notaSaymon}
+                        value={prop.notaSaymon || 0}
                         onChange={(e) =>
                           onQuickUpdateProperty(prop.id, { notaSaymon: Number(e.target.value) })
                         }
-                        title="Saymon"
-                        className="h-7 w-12 text-xs font-extrabold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1 shadow-sm hover:border-amber-400 transition-all"
+                        title="Saymon (Nota 1-5)"
+                        className={`h-7 w-12 text-xs font-extrabold text-center rounded-lg cursor-pointer appearance-none px-1 shadow-xs transition-all ${
+                          prop.notaSaymon && prop.notaSaymon > 0
+                            ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:border-amber-400'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                        }`}
                       >
+                        <option value={0}>—</option>
                         {[1, 2, 3, 4, 5].map((n) => (
                           <option key={n} value={n}>
                             ⭐ {n}
@@ -391,13 +396,18 @@ export function PropertyTableView({
                     {/* KELLY COMPACT BADGE */}
                     <td className="py-3 px-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <select
-                        value={prop.notaKelly}
+                        value={prop.notaKelly || 0}
                         onChange={(e) =>
                           onQuickUpdateProperty(prop.id, { notaKelly: Number(e.target.value) })
                         }
-                        title="Kelly"
-                        className="h-7 w-12 text-xs font-extrabold text-center rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer appearance-none px-1 shadow-sm hover:border-amber-400 transition-all"
+                        title="Kelly (Nota 1-5)"
+                        className={`h-7 w-12 text-xs font-extrabold text-center rounded-lg cursor-pointer appearance-none px-1 shadow-xs transition-all ${
+                          prop.notaKelly && prop.notaKelly > 0
+                            ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:border-amber-400'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                        }`}
                       >
+                        <option value={0}>—</option>
                         {[1, 2, 3, 4, 5].map((n) => (
                           <option key={n} value={n}>
                             ⭐ {n}

@@ -103,9 +103,9 @@ export function useProperties() {
         values.areaUtil
       );
 
-      const nSaymon = Number(values.notaSaymon || 4);
-      const nKelly = Number(values.notaKelly || 4);
-      const mediaCasal = Number(((nSaymon + nKelly) / 2).toFixed(1));
+      const nSaymon = Number(values.notaSaymon || 0);
+      const nKelly = Number(values.notaKelly || 0);
+      const mediaCasal = (nSaymon > 0 && nKelly > 0) ? Number(((nSaymon + nKelly) / 2).toFixed(1)) : 0;
 
       const newProperty: Property = {
         id: `prop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -130,11 +130,11 @@ export function useProperties() {
         status: values.status || 'Para Analisar',
 
         notaSaymon: nSaymon,
-        vereditoSaymon: values.vereditoSaymon || 'Gostei',
+        vereditoSaymon: values.vereditoSaymon || undefined,
         opiniaoSaymon: values.opiniaoSaymon?.trim() || undefined,
 
         notaKelly: nKelly,
-        vereditoKelly: values.vereditoKelly || 'Gostei',
+        vereditoKelly: values.vereditoKelly || undefined,
         opiniaoKelly: values.opiniaoKelly?.trim() || undefined,
 
         mediaCasal: mediaCasal,
@@ -184,12 +184,12 @@ export function useProperties() {
         diferenciais: values.diferenciais || [],
         status: 'Para Analisar',
 
-        notaSaymon: 4,
-        vereditoSaymon: 'Gostei',
-        notaKelly: 4,
-        vereditoKelly: 'Gostei',
-        mediaCasal: 4.0,
-        notaPessoal: 4.0,
+        notaSaymon: 0,
+        vereditoSaymon: undefined,
+        notaKelly: 0,
+        vereditoKelly: undefined,
+        mediaCasal: 0,
+        notaPessoal: 0,
 
         observacoes: values.observacoes?.trim() || undefined,
         duvidasCorretor: values.duvidasCorretor?.trim() || undefined,
@@ -315,8 +315,8 @@ export function useProperties() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
-                saymonWork: anchors.saymonWork,
-                kellyWork: anchors.kellyWork,
+                saymonAddress1: anchors.saymonAddress1 || anchors.saymonWork,
+                kellyAddress1: anchors.kellyAddress1 || anchors.kellyWork,
               }),
             });
             const json = await res.json();

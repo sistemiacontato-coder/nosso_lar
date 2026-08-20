@@ -4,15 +4,37 @@ export const dynamic = 'force-dynamic';
 
 // Geocodes an address string into lat/lon
 async function geocode(address: string): Promise<{ lat: number; lon: number } | null> {
-  if (!address || address.trim().length < 3) return null;
+  if (!address || address.trim().length < 2) return null;
+  const lower = address.toLowerCase();
+
+  // Instant landmark fallback for Osasco & SP West
+  if (lower.includes('prata') || lower.includes('cidade de deus') || lower.includes('bradesco')) {
+    return { lat: -23.5358, lon: -46.7725 };
+  }
+  if (lower.includes('miguel rachid')) {
+    return { lat: -23.5320, lon: -46.7790 };
+  }
+  if (lower.includes('vila yara') || lower.includes('yara')) {
+    return { lat: -23.5380, lon: -46.7680 };
+  }
+  if (lower.includes('continental')) {
+    return { lat: -23.5400, lon: -46.7620 };
+  }
+  if (lower.includes('vila são francisco') || lower.includes('cândido mota')) {
+    return { lat: -23.5490, lon: -46.7560 };
+  }
+  if (lower.includes('lorian') || lower.includes('moema')) {
+    return { lat: -23.5420, lon: -46.7660 };
+  }
+
   try {
-    const searchQuery = address.toLowerCase().includes('sp') || address.toLowerCase().includes('são paulo') || address.toLowerCase().includes('osasco')
+    const searchQuery = address.toLowerCase().includes('osasco') || address.toLowerCase().includes('são paulo')
       ? address
-      : `${address}, SP, Brasil`;
+      : `${address}, Osasco, SP, Brasil`;
 
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       searchQuery
-    )}&format=json&limit=1&countrycodes=br`;
+    )}&format=json&limit=1&countrycodes=br&viewbox=-46.85,-23.60,-46.70,-23.50&bounded=0`;
 
     const res = await fetch(url, {
       headers: {
