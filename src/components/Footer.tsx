@@ -9,12 +9,12 @@ export function Footer() {
     'https://wa.me/5511981394841?text=Ol%C3%A1!%20Vim%20pelo%20Nosso%20Lar%20e%20gostaria%20de%20falar%20com%20a%20Sistemia.';
 
   return (
-    <footer className="border-t border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-950/60 backdrop-blur-md py-4 text-xs text-slate-500 dark:text-slate-400">
+    <footer className="border-t border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-950/70 backdrop-blur-md py-3 text-[11px] text-slate-500 dark:text-slate-400">
       <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Left Side: Nosso Lar Branding & Couple Context */}
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Left Side: Clean & Harmonious Context */}
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <span className="font-bold text-slate-800 dark:text-slate-200">
               Nosso <span className="text-rose-600 dark:text-rose-400">Lar</span> © {currentYear}
             </span>
             <span className="text-slate-300 dark:text-slate-700">—</span>
@@ -23,12 +23,12 @@ export function Footer() {
             </span>
           </div>
 
-          {/* Right Side: Desenvolvido por + Cropped Transparent Logo + Discrete WhatsApp Icon */}
-          <div className="flex items-center gap-3">
+          {/* Right Side: Harmonious Logo & Official WhatsApp Badge */}
+          <div className="flex items-center gap-2 text-[11px]">
             <span className="text-slate-400 font-normal">Desenvolvido por</span>
 
-            {/* Recortada & Transparente Logo */}
-            <div className="relative h-6 w-24 hover:opacity-90 transition-opacity">
+            {/* Logo perfeitamente harmonizada em altura com a fonte (h-[14px]) */}
+            <div className="relative h-[14px] w-[70px] opacity-90 hover:opacity-100 transition-opacity">
               <Image
                 src="/sistemia_logo_clean.png"
                 alt="Sistemia"
@@ -37,16 +37,16 @@ export function Footer() {
               />
             </div>
 
-            {/* Discrete Green WhatsApp Icon Only (Without text number) */}
+            {/* Botão Oficial do WhatsApp (Sólido Verde #25D366 com ícone branco) */}
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
               title="Falar com a Sistemia no WhatsApp"
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-white transition-all shadow-sm hover:scale-110 shrink-0"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-[#25D366] text-white hover:scale-110 transition-transform shadow-sm ml-0.5 shrink-0"
             >
               <svg
-                className="h-4 w-4 fill-current"
+                className="h-3 w-3 fill-current"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >

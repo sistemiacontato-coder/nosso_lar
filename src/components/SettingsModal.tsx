@@ -301,20 +301,25 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </span>
             </div>
 
-            {/* API Key */}
+            {/* API Key (Visible by default) */}
             <div className="space-y-1.5">
-              <Label htmlFor="apiKey" className="text-xs font-semibold">
-                Chave da API (API Key) <span className="text-rose-500">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="apiKey" className="text-xs font-semibold">
+                  Chave da API (API Key) <span className="text-rose-500">*</span>
+                </Label>
+                <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+                  👁️ Chave Visível
+                </span>
+              </div>
               <div className="relative">
                 <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   id="apiKey"
-                  type="password"
+                  type="text"
                   placeholder="Ex: AIzaSy... (Gemini) ou sk-... (OpenAI) ou gsk_... (Groq)"
                   value={currentSection.apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
-                  className="pl-9 text-xs"
+                  className="pl-9 pr-4 text-xs font-mono bg-slate-50/50 dark:bg-slate-950/50"
                 />
               </div>
               <p className="text-[11px] text-slate-400">
