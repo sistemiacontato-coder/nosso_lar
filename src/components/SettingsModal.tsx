@@ -16,7 +16,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v5';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v6';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
@@ -36,9 +36,9 @@ export interface AIConfig {
 
 export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> = {
   gemini: [
-    { id: 'gemini-1.5-flash', name: 'Google Gemini 1.5 Flash' },
-    { id: 'gemini-1.5-pro', name: 'Google Gemini 1.5 Pro' },
-    { id: 'gemini-2.0-flash-exp', name: 'Google Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-flash', name: 'Google Gemini 1.5 Flash (Super Rápido)' },
+    { id: 'gemini-1.5-pro', name: 'Google Gemini 1.5 Pro (Raciocínio Profundo)' },
+    { id: 'gemini-2.0-flash-exp', name: 'Google Gemini 2.0 Flash (Experimental)' },
   ],
   openai: [
     { id: 'gpt-4o-mini', name: 'OpenAI GPT-4o Mini' },
@@ -46,8 +46,14 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> 
     { id: 'gpt-3.5-turbo', name: 'OpenAI GPT-3.5 Turbo' },
   ],
   groq: [
-    { id: 'llama-3.3-70b-versatile', name: 'Groq Llama 3.3 70B' },
+    { id: 'llama-3.3-70b-versatile', name: 'Groq Llama 3.3 70B Versatile (Recomendado)' },
+    { id: 'llama-3.1-8b-instant', name: 'Groq Llama 3.1 8B Instant (Ultra Rápido)' },
+    { id: 'deepseek-r1-distill-llama-70b', name: 'Groq DeepSeek R1 Distill 70B (Raciocínio)' },
+    { id: 'llama-3.2-11b-vision-preview', name: 'Groq Llama 3.2 11B Vision' },
+    { id: 'llama-3.2-90b-vision-preview', name: 'Groq Llama 3.2 90B Vision' },
     { id: 'mixtral-8x7b-32768', name: 'Groq Mixtral 8x7B' },
+    { id: 'gemma2-9b-it', name: 'Groq Gemma 2 9B' },
+    { id: 'qwen-2.5-coder-32b', name: 'Groq Qwen 2.5 Coder 32B' },
   ],
   custom: [
     { id: 'deepseek-chat', name: 'DeepSeek V3' },
@@ -69,6 +75,27 @@ export const DEFAULT_CONFIG: AIConfig = {
     model: 'llama-3.3-70b-versatile',
   },
 };
+
+// Robust Auto Detection Function for API Keys
+export function detectProvider(key: string): AIProvider {
+  const cleanKey = key.trim();
+  if (!cleanKey) return 'gemini';
+
+  if (cleanKey.startsWith('gsk_')) return 'groq';
+  if (cleanKey.startsWith('sk-')) return 'openai';
+  if (
+    cleanKey.startsWith('AIzaSy') ||
+    cleanKey.startsWith('AIza') ||
+    cleanKey.startsWith('AQ.') ||
+    cleanKey.startsWith('AQ') ||
+    cleanKey.length === 39
+  ) {
+    return 'gemini';
+  }
+
+  // Default fallback if unknown key format
+  return 'gemini';
+}
 
 export function getStoredAIConfig(): AIConfig {
   if (typeof window === 'undefined') return DEFAULT_CONFIG;
@@ -138,21 +165,20 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setFallbackStatus(null);
   };
 
-  // Auto detect provider by key prefix
+  // Auto detect provider by key prefix & sync model
   const handleKeyChange = (val: string) => {
     const key = val.trim();
-    let provider: AIProvider = currentSection.provider;
-
-    if (key.startsWith('AIzaSy')) provider = 'gemini';
-    else if (key.startsWith('sk-')) provider = 'openai';
-    else if (key.startsWith('gsk_')) provider = 'groq';
-
-    const defaultModel = DEFAULT_MODELS[provider]?.[0]?.id || currentSection.model;
+    const provider = detectProvider(key);
+    const availableModels = DEFAULT_MODELS[provider] || DEFAULT_MODELS.gemini;
+    
+    // Pick first available model for detected provider if previous model belonged to another provider
+    const isCurrentModelValid = availableModels.some((m) => m.id === currentSection.model);
+    const model = isCurrentModelValid ? currentSection.model : availableModels[0].id;
 
     updateCurrentSection({
       apiKey: key,
       provider,
-      model: defaultModel,
+      model,
     });
   };
 
@@ -168,6 +194,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       return;
     }
 
+    const detected = detectProvider(key);
+
     if (target === 'primary') setTestingPrimary(true);
     else setTestingFallback(true);
 
@@ -175,17 +203,17 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
     try {
       let isOk = false;
-      let providerName = targetCfg.provider.toUpperCase();
+      const providerName = detected.toUpperCase();
 
-      if (targetCfg.provider === 'gemini') {
+      if (detected === 'gemini') {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         isOk = res.ok;
-      } else if (targetCfg.provider === 'openai') {
+      } else if (detected === 'openai') {
         const res = await fetch('https://api.openai.com/v1/models', {
           headers: { Authorization: `Bearer ${key}` },
         });
         isOk = res.ok;
-      } else if (targetCfg.provider === 'groq') {
+      } else if (detected === 'groq') {
         const res = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { Authorization: `Bearer ${key}` },
         });
@@ -197,6 +225,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       const latency = Date.now() - start;
 
       if (isOk) {
+        // Sync provider state if needed
+        updateCurrentSection({ provider: detected });
         const resOk = { ok: true, msg: `Conectado ao ${providerName} (${latency}ms)` };
         if (target === 'primary') setPrimaryStatus(resOk);
         else setFallbackStatus(resOk);
@@ -218,7 +248,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     onOpenChange(false);
   };
 
-  // Provider Label
   const getProviderBadge = (provider: AIProvider) => {
     switch (provider) {
       case 'gemini':
@@ -232,6 +261,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         return 'Custom AI 🛠️';
     }
   };
+
+  const detectedProvider = detectProvider(currentSection.apiKey);
+  const modelsList = DEFAULT_MODELS[detectedProvider] || DEFAULT_MODELS.gemini;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} maxWidth="lg">
@@ -314,15 +346,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </Button>
           </div>
 
-          {/* Clean Reader Form (No redundant buttons or "Chave Visível" tags) */}
+          {/* Clean Reader Form with Auto Detected Provider */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 {activeTab === 'primary' ? 'Configuração do 1º Leitor' : 'Configuração do 2º Leitor'}
               </span>
               {currentSection.apiKey && (
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                  {getProviderBadge(currentSection.provider)}
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                  {getProviderBadge(detectedProvider)}
                 </span>
               )}
             </div>
@@ -337,7 +369,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <Input
                   id="apiKey"
                   type="text"
-                  placeholder="Cole sua chave API (ex: AIzaSy... / sk-... / gsk_...)"
+                  placeholder="Cole sua chave API (Gemini: AIza... / AQ... | Groq: gsk_... | OpenAI: sk-...)"
                   value={currentSection.apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
                   className="pl-9 text-xs font-mono"
@@ -345,18 +377,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             </div>
 
-            {/* Model Selector */}
+            {/* Model Selector (Syncs automatically with detected provider) */}
             <div className="space-y-1">
               <Label htmlFor="model" className="text-xs font-semibold">
-                Modelo da Inteligência Artificial
+                Modelo da Inteligência Artificial ({getProviderBadge(detectedProvider)})
               </Label>
               <select
                 id="model"
                 value={currentSection.model}
-                onChange={(e) => updateCurrentSection({ model: e.target.value })}
+                onChange={(e) => updateCurrentSection({ model: e.target.value, provider: detectedProvider })}
                 className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
               >
-                {DEFAULT_MODELS[currentSection.provider]?.map((m) => (
+                {modelsList.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
