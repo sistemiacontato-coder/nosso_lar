@@ -29,6 +29,38 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 0. Primary: Official Google Maps Geocoding API (If GOOGLE_MAPS_API_KEY is configured)
+    const googleKey = process.env.GOOGLE_MAPS_API_KEY || searchParams.get('googleKey');
+    if (googleKey && googleKey.trim()) {
+      try {
+        const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          cleanQuery
+        )}&components=country:BR&language=pt-BR&key=${googleKey.trim()}`;
+
+        const gRes = await fetch(gUrl);
+        if (gRes.ok) {
+          const gJson = await gRes.json();
+          if (gJson.results && Array.isArray(gJson.results)) {
+            for (const item of gJson.results.slice(0, 5)) {
+              const key = `google-${item.place_id}`;
+              if (!seenIds.has(key)) {
+                seenIds.add(key);
+                suggestions.push({
+                  id: key,
+                  displayName: item.formatted_address,
+                  shortTitle: item.address_components?.[0]?.long_name || item.formatted_address,
+                  lat: item.geometry?.location?.lat,
+                  lon: item.geometry?.location?.lng,
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Google Maps Geocode API error:', e);
+      }
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     // 1. Primary: Gemini AI Location Resolver (Returns exact Google Maps Landmarks & POIs for Brazil/SP)

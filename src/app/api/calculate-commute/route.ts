@@ -66,6 +66,37 @@ function haversineDistance(coords1: { lat: number; lon: number }, coords2: { lat
   return R * c;
 }
 
+// Helper to call Google Maps Distance Matrix API for official Google Maps traffic & route duration
+async function getGoogleDistanceMatrix(
+  origin: string,
+  destination: string,
+  departureTime?: string,
+  apiKey?: string
+): Promise<number | null> {
+  const key = apiKey || process.env.GOOGLE_MAPS_API_KEY;
+  if (!key || !key.trim()) return null;
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(
+      origin
+    )}&destinations=${encodeURIComponent(destination)}&departure_time=now&traffic_model=best_guess&language=pt-BR&key=${key.trim()}`;
+
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const element = json.rows?.[0]?.elements?.[0];
+    if (element && element.status === 'OK') {
+      const durationSec = element.duration_in_traffic?.value || element.duration?.value;
+      if (durationSec) {
+        return Math.max(3, Math.round(durationSec / 60));
+      }
+    }
+  } catch (e) {
+    console.warn('Google Distance Matrix API error:', e);
+  }
+  return null;
+}
+
 // Helper to calculate traffic factor based on departure time
 function getTrafficFactor(departureTime?: string): number {
   if (!departureTime) return 1.35; // Default peak traffic
@@ -120,19 +151,45 @@ export async function POST(req: NextRequest) {
       kellyTime,
       saymonWork,
       kellyWork,
+      googleApiKey,
     } = body;
 
     if (!propertyAddress) {
       return NextResponse.json({ success: false, error: 'Property address missing' }, { status: 400 });
     }
 
-    const propCoords = await geocode(propertyAddress);
-
-    // Support both new format and legacy saymonWork/kellyWork
     const addrSaymon1 = saymonAddress1 || saymonWork || '';
     const addrSaymon2 = saymonAddress2 || '';
     const addrKelly1 = kellyAddress1 || kellyWork || '';
     const addrKelly2 = kellyAddress2 || '';
+
+    // 1. Check Google Maps Distance Matrix API if key is available
+    const activeGoogleKey = googleApiKey || process.env.GOOGLE_MAPS_API_KEY;
+    if (activeGoogleKey) {
+      let gSaymonMin: number | null = null;
+      let gKellyMin: number | null = null;
+
+      if (addrSaymon1) {
+        gSaymonMin = await getGoogleDistanceMatrix(propertyAddress, addrSaymon1, saymonTime, activeGoogleKey);
+      }
+      if (addrKelly1) {
+        gKellyMin = await getGoogleDistanceMatrix(propertyAddress, addrKelly1, kellyTime, activeGoogleKey);
+      }
+
+      if (gSaymonMin !== null || gKellyMin !== null) {
+        const tempoSaymon = gSaymonMin ?? 25;
+        const tempoKelly = gKellyMin ?? 30;
+        return NextResponse.json({
+          success: true,
+          provider: 'google_maps_distance_matrix',
+          tempoSaymonMinutos: tempoSaymon,
+          tempoKellyMinutos: tempoKelly,
+          mediaTempoMinutos: Math.round((tempoSaymon + tempoKelly) / 2),
+        });
+      }
+    }
+
+    const propCoords = await geocode(propertyAddress);
 
     const coordsSaymon1 = await geocode(addrSaymon1);
     const coordsSaymon2 = await geocode(addrSaymon2);

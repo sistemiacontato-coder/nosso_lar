@@ -310,13 +310,17 @@ export function useProperties() {
       const updatedList = await Promise.all(
         properties.map(async (p) => {
           try {
+            const googleApiKey = typeof window !== 'undefined' ? localStorage.getItem('nosso_lar_google_maps_key') || undefined : undefined;
             const res = await fetch('/api/calculate-commute', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
                 saymonAddress1: anchors.saymonAddress1 || anchors.saymonWork,
+                saymonTime: anchors.saymonTime,
                 kellyAddress1: anchors.kellyAddress1 || anchors.kellyWork,
+                kellyTime: anchors.kellyTime,
+                googleApiKey,
               }),
             });
             const json = await res.json();

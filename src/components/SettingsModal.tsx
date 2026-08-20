@@ -99,6 +99,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsModalProps) {
   const [config, setConfig] = useState<AIConfig>(DEFAULT_CONFIG);
+  const [googleMapsKey, setGoogleMapsKey] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
 
   // Dynamic Validation States
@@ -119,6 +120,7 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
   useEffect(() => {
     if (open) {
       setResetMessage(null);
+      setGoogleMapsKey(localStorage.getItem('nosso_lar_google_maps_key') || '');
       const stored = getStoredAIConfig();
       setConfig(stored);
 
@@ -312,6 +314,37 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
               )}
             </div>
           )}
+
+          {/* Google Maps API Key Card */}
+          <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="font-bold text-blue-950 dark:text-blue-200">
+                  Chave API Oficial do Google Maps (Opcional)
+                </span>
+              </div>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                Google Maps
+              </span>
+            </div>
+            <p className="text-[11px] text-blue-800 dark:text-blue-300 leading-snug">
+              Insira sua chave para utilizar a <strong>Distance Matrix & Geocoding API oficial do Google</strong> com trânsito em tempo real!
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="Cole sua API Key do Google Maps (ex: AIzaSy...)..."
+                value={googleMapsKey}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  setGoogleMapsKey(val);
+                  localStorage.setItem('nosso_lar_google_maps_key', val);
+                }}
+                className="text-xs bg-white dark:bg-slate-900"
+              />
+            </div>
+          </div>
 
           {/* Redundancy Switch */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
