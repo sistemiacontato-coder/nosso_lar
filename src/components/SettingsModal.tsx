@@ -267,7 +267,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-slate-900 dark:text-white">
-                Configuração de Inteligência Artificial
+                Configurações
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Se o 1º Leitor falhar, o 2º Leitor entra em ação automaticamente.

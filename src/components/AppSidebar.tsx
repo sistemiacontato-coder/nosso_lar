@@ -150,7 +150,7 @@ export function AppSidebar({
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${
                   isCollapsed ? 'justify-center px-0' : ''
                 }`}
-                title="Configurações da Inteligência Artificial"
+                title="Configurações do Sistema"
               >
                 <Sparkles className="h-4 w-4 shrink-0 text-indigo-600" />
                 {!isCollapsed && <span className="truncate">Configuração da IA</span>}

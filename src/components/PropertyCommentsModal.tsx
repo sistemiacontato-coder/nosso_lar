@@ -59,7 +59,7 @@ export function PropertyCommentsModal({ property, open, onOpenChange }: Property
           <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/30 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-xs text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                <span className="text-base">🧑🏻‍🦱</span> Opinião do Saymon
+                <span className="text-base">👨🏻</span> Opinião do Saymon
                 {property.vereditoSaymon && (
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
                     {property.vereditoSaymon}
@@ -79,7 +79,7 @@ export function PropertyCommentsModal({ property, open, onOpenChange }: Property
           <div className="rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/30 p-3.5 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-xs text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
-                <span className="text-base">👩🏻‍🦱</span> Opinião da Kelly
+                <span className="text-base">👩🏻</span> Opinião da Kelly
                 {property.vereditoKelly && (
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300">
                     {property.vereditoKelly}

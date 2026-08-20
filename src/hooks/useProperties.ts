@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Property, PropertyFilters, PropertySortKey, PropertyStatus, CommuteAnchors } from '@/types/property';
 import { INITIAL_PROPERTIES } from '@/lib/initialData';
 import { useLocalStorage } from './useLocalStorage';
 import { calculateTotals } from '@/lib/utils';
 import { PropertyFormValues } from '@/lib/schemas';
+
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v7';
 
@@ -14,6 +16,67 @@ export function useProperties() {
     STORAGE_KEY,
     INITIAL_PROPERTIES
   );
+
+  // ─── Supabase Realtime: ouve sugestões dos corretores em tempo real ───
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const channel = supabase
+      .channel('nosso_lar_sugestoes_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'nosso_lar_sugestoes' },
+        (payload: any) => {
+          const row = payload.new;
+          const novasugestao: Property = {
+            id: row.id,
+            titulo: row.titulo,
+            urlAnuncio: row.url_anuncio || '',
+            urlImagem: row.url_imagem || undefined,
+            bairro: row.bairro || 'Osasco',
+            endereco: row.endereco || undefined,
+            valorAluguel: Number(row.valor_aluguel) || 0,
+            valorCondominio: Number(row.valor_condominio) || 0,
+            valorIptu: Number(row.valor_iptu) || 0,
+            custoTotalMensal: (Number(row.valor_aluguel) || 0) + (Number(row.valor_condominio) || 0) + (Number(row.valor_iptu) || 0),
+            dormitorios: Number(row.dormitorios) || 1,
+            suites: Number(row.suites) || 0,
+            banheiros: Number(row.banheiros) || 1,
+            vagasGaragem: Number(row.vagas_garagem) || 0,
+            areaUtil: Number(row.area_util) || 50,
+            precoMetroQuadrado: 0,
+            tempoAteTrabalhoMinutos: Number(row.tempo_trabalho_min) || 25,
+            distanciaMetroKm: 1.5,
+            diferenciais: Array.isArray(row.diferenciais) ? row.diferenciais : [],
+            status: 'Para Analisar' as const,
+            notaSaymon: 4,
+            vereditoSaymon: 'Gostei',
+            notaKelly: 4,
+            vereditoKelly: 'Gostei',
+            mediaCasal: 4,
+            notaPessoal: 4,
+            observacoes: row.observacoes || undefined,
+            duvidasCorretor: row.duvidas_corretor || undefined,
+            isSugestao: true,
+            nomeCorretor: row.nome_corretor || undefined,
+            telefoneCorretor: row.telefone_corretor || undefined,
+            dataCadastro: row.criado_em || new Date().toISOString(),
+            isFavorito: false,
+          };
+
+          // Só adiciona se ainda não existir no estado local
+          setProperties((prev) => {
+            if (prev.find((p) => p.id === row.id)) return prev;
+            return [novasugestao, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [setProperties]);
 
   const [filters, setFilters] = useState<PropertyFilters>({
     search: '',

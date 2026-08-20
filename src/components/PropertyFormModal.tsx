@@ -346,7 +346,7 @@ export function PropertyFormModal({
               : step === 'choose'
               ? 'Cadastrar Imóvel para o Nosso Lar'
               : step === 'scan'
-              ? 'Extração Automática por Link'
+              ? 'Extração por Link'
               : 'Formulário de Cadastro Manual'}
           </DialogTitle>
 
@@ -378,7 +378,7 @@ export function PropertyFormModal({
       {!isEditing && step === 'choose' && (
         <div className="py-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Opção 1: Extração Automática por Link */}
+            {/* Opção 1: Extração por Link */}
             <button
               type="button"
               onClick={() => setStep('scan')}
@@ -389,10 +389,10 @@ export function PropertyFormModal({
               </div>
               <div className="space-y-1.5">
                 <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  Extração Automática por Link
+                  Extração por Link
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Cole o link do anúncio (VivaReal, QuintoAndar, Zap, B2M) e nossa Inteligência Artificial lerá foto, área, cômodos e valores automaticamente.
+                  Cole o link do anúncio (VivaReal, QuintoAndar, Zap, B2M) e o sistema lerá foto, área, cômodos e valores automaticamente.
                 </p>
               </div>
               <span className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs group-hover:bg-indigo-700 transition-colors shadow-sm">
@@ -482,7 +482,7 @@ export function PropertyFormModal({
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
-                        Extrair Dados com IA
+                        Extrair Dados
                       </>
                     )}
                   </Button>
@@ -801,7 +801,7 @@ export function PropertyFormModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="tempoSaymonMinutos">
-                  Trabalho do Saymon 🧑🏻‍🦱 (em minutos)
+                  Trabalho do Saymon 👨🏻 (em minutos)
                 </Label>
                 <Input
                   id="tempoSaymonMinutos"
@@ -814,7 +814,7 @@ export function PropertyFormModal({
 
               <div className="space-y-1.5">
                 <Label htmlFor="tempoKellyMinutos">
-                  Trabalho da Kelly 👩🏻‍🦱 (em minutos)
+                  Trabalho da Kelly 👩🏻 (em minutos)
                 </Label>
                 <Input
                   id="tempoKellyMinutos"
@@ -859,7 +859,7 @@ export function PropertyFormModal({
             {/* SAYMON */}
             <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
               <h5 className="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
-                <span>🧑🏻‍🦱 Saymon</span>
+                <span>👨🏻 Saymon</span>
               </h5>
 
               <div className="grid grid-cols-2 gap-3">
@@ -914,7 +914,7 @@ export function PropertyFormModal({
             {/* KELLY */}
             <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-3">
               <h5 className="text-xs font-extrabold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
-                <span>👩🏻‍🦱 Kelly</span>
+                <span>👩🏻 Kelly</span>
               </h5>
 
               <div className="grid grid-cols-2 gap-3">

@@ -224,7 +224,7 @@ export function SidebarDashboard({
             {/* Saymon Addresses */}
             <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-1.5 text-xs">
               <div className="font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                <span>🧑🏻‍🦱 Saymon</span>
+                <span>👨🏻 Saymon</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 truncate">
                 <span className="font-bold">1:</span> {anchors.saymonAddress1 || 'Não cadastrado'}
@@ -239,7 +239,7 @@ export function SidebarDashboard({
             {/* Kelly Addresses */}
             <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/60 space-y-1.5 text-xs">
               <div className="font-extrabold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
-                <span>👩🏻‍🦱 Kelly</span>
+                <span>👩🏻 Kelly</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 truncate">
                 <span className="font-bold">1:</span> {anchors.kellyAddress1 || 'Não cadastrado'}

@@ -143,7 +143,7 @@ export default function CorretorPortalPage() {
 
   const handleExtract = () => handleExtractAndValidateWithUrl(urlAnuncio);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nomeCorretor.trim()) {
       setErrorMsg('Informe seu Nome / Imobiliária.');
@@ -163,9 +163,45 @@ export default function CorretorPortalPage() {
     }
 
     const fullPhone = `(${dddCorretor}) ${numeroCorretor}`;
+    const newId = `sugestao-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+    // 1. Salva localmente (para o próprio browser do corretor)
     addRealtorSuggestion(extractedData, nomeCorretor, fullPhone);
+
+    // 2. Envia ao Supabase para que o painel do Saymon receba em tempo real
+    try {
+      const { supabase, isSupabaseConfigured } = await import('@/lib/supabase');
+      if (isSupabaseConfigured && supabase) {
+        await supabase.from('nosso_lar_sugestoes').insert({
+          id: newId,
+          titulo: extractedData.titulo,
+          url_anuncio: extractedData.urlAnuncio,
+          url_imagem: extractedData.urlImagem || null,
+          bairro: extractedData.bairro,
+          endereco: extractedData.endereco || null,
+          valor_aluguel: extractedData.valorAluguel,
+          valor_condominio: extractedData.valorCondominio,
+          valor_iptu: extractedData.valorIptu,
+          dormitorios: extractedData.dormitorios,
+          suites: extractedData.suites,
+          banheiros: extractedData.banheiros,
+          vagas_garagem: extractedData.vagasGaragem,
+          area_util: extractedData.areaUtil,
+          tempo_trabalho_min: extractedData.tempoAteTrabalhoMinutos,
+          diferenciais: extractedData.diferenciais || [],
+          observacoes: extractedData.observacoes || null,
+          duvidas_corretor: extractedData.duvidasCorretor || null,
+          nome_corretor: nomeCorretor.trim(),
+          telefone_corretor: fullPhone,
+        });
+      }
+    } catch (err) {
+      console.warn('Supabase sync error (non-critical):', err);
+    }
+
     setSubmittedSuccess(true);
   };
+
 
   const totalCost = extractedData
     ? extractedData.valorAluguel + extractedData.valorCondominio + extractedData.valorIptu
@@ -186,7 +222,7 @@ export default function CorretorPortalPage() {
             </div>
             <div>
               <h1 className="font-extrabold text-base text-slate-900 dark:text-white">
-                Portal do Corretor — Saymon & Kelly
+                Portal do Corretor | Saymon & Kelly
               </h1>
               <p className="text-[11px] text-slate-500">
                 Envio de Imóveis para Aluguel (Osasco & SP Zona Oeste)

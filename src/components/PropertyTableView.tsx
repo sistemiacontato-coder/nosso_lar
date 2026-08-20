@@ -163,13 +163,13 @@ export function PropertyTableView({
                 className="py-2.5 px-1.5 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
                 title="Saymon"
               >
-                <span className="text-sm sm:text-base" role="img" aria-label="Saymon">🧑🏻‍🦱</span>
+                <span className="text-sm sm:text-base" role="img" aria-label="Saymon">👨🏻</span>
               </th>
               <th
                 className="py-2.5 px-1.5 text-center whitespace-nowrap cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
                 title="Kelly"
               >
-                <span className="text-sm sm:text-base" role="img" aria-label="Kelly">👩🏻‍🦱</span>
+                <span className="text-sm sm:text-base" role="img" aria-label="Kelly">👩🏻</span>
               </th>
               <th
                 className="py-2.5 px-2 whitespace-nowrap cursor-help"
@@ -395,9 +395,9 @@ export function PropertyTableView({
                     {/* TRAJETO */}
                     <td className="py-3 px-3 whitespace-nowrap text-[11px]">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-                        <span title="Saymon (Trabalho)">🧑🏻‍🦱 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
+                        <span title="Saymon (Trabalho)">👨🏻 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                         <span className="text-slate-300">|</span>
-                        <span title="Kelly (Trabalho)">👩🏻‍🦱 {prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
+                        <span title="Kelly (Trabalho)">👩🏻 {prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                       </div>
                     </td>
 
