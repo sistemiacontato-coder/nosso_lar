@@ -224,22 +224,19 @@ export function PropertyTableView({
                       </button>
                     </td>
 
-                    {/* Foto Thumb */}
+                    {/* Foto Thumb with Unsplash Fallback */}
                     <td className="py-3 px-3 text-center">
                       <div className="relative h-11 w-11 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mx-auto group">
-                        {prop.urlImagem ? (
-                          <Image
-                            src={prop.urlImagem}
-                            alt={prop.titulo}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-slate-400">
-                            <Building className="h-5 w-5" />
-                          </div>
-                        )}
+                        <Image
+                          src={
+                            prop.urlImagem ||
+                            'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80'
+                          }
+                          alt={prop.titulo}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          unoptimized
+                        />
                       </div>
                     </td>
 
@@ -271,20 +268,27 @@ export function PropertyTableView({
                           )}
                         </div>
 
-                        {/* Corretor Info Badge */}
+                        {/* Corretor Info Badge Single Horizontal Row */}
                         {(prop.nomeCorretor || prop.telefoneCorretor || prop.isSugestao) && (
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                            <span>👔 {prop.nomeCorretor || 'Corretor'}</span>
+                          <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                            <span className="flex items-center gap-1">
+                              <span>👔</span>
+                              <span>{prop.nomeCorretor || 'Corretor'}</span>
+                            </span>
                             {prop.telefoneCorretor && (
-                              <a
-                                href={`https://wa.me/55${prop.telefoneCorretor.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-emerald-600 dark:text-emerald-400 hover:underline"
-                                title="Enviar mensagem no WhatsApp"
-                              >
-                                📞 {prop.telefoneCorretor}
-                              </a>
+                              <>
+                                <span className="text-slate-300 dark:text-slate-700">•</span>
+                                <a
+                                  href={`https://wa.me/55${prop.telefoneCorretor.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline"
+                                  title="Enviar WhatsApp"
+                                >
+                                  <Phone className="h-2.5 w-2.5" />
+                                  <span>{prop.telefoneCorretor}</span>
+                                </a>
+                              </>
                             )}
                           </div>
                         )}
