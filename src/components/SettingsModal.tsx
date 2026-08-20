@@ -10,14 +10,13 @@ import {
   Zap,
   ArrowLeftRight,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v8';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v9';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
@@ -186,7 +185,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     });
   };
 
-  // Live Model Fetcher and Key Connection Validator via Server Backend API Route
   const fetchModelsForKey = async (key: string, target: 'primary' | 'fallback', initialModelSelect?: string) => {
     if (!key.trim()) return;
 
@@ -342,11 +340,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
           {/* Clean Reader Form */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
-            {/* Field 1: API Key */}
+            {/* Field 1: API Key Label + Aligned Provider Name Badge */}
             <div className="space-y-1.5">
-              <Label htmlFor="apiKey" className="text-xs font-semibold">
-                Chave da API
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="apiKey" className="text-xs font-semibold">
+                  Chave da API
+                </Label>
+                {isValidated && providerDisplayName && (
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 tracking-wider uppercase">
+                    {providerDisplayName}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
@@ -398,37 +403,24 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               )}
             </div>
 
-            {/* Field 3: Display Identified Provider Name & Model Selector */}
+            {/* Field 3: Model Selector */}
             {isValidated && currentModels.length > 0 && (
-              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
-                {/* Provedor Identificado */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-xs">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-indigo-600" /> Inteligência Identificada:
-                  </span>
-                  <span className="font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider text-[11px]">
-                    {providerDisplayName}
-                  </span>
-                </div>
-
-                {/* Model Selector */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="model" className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    Selecione o Modelo para este Leitor
-                  </Label>
-                  <select
-                    id="model"
-                    value={currentSection.model}
-                    onChange={(e) => updateCurrentSection({ model: e.target.value })}
-                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
-                  >
-                    {currentModels.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+                <Label htmlFor="model" className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Selecione o Modelo para este Leitor
+                </Label>
+                <select
+                  id="model"
+                  value={currentSection.model}
+                  onChange={(e) => updateCurrentSection({ model: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
+                >
+                  {currentModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>

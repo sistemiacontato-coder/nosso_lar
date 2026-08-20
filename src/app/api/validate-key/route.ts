@@ -83,19 +83,15 @@ export async function POST(req: Request) {
 
       const data = await res.json();
       if (data.data && Array.isArray(data.data)) {
-        // Filter ONLY LLM text/chat models, exclude whisper, guardrails, compound
+        // Exclude audio/whisper and prompt guards only, include all LLMs
         models = data.data
           .filter((m: any) => {
             const id = (m.id || '').toLowerCase();
             return (
-              (id.includes('llama') ||
-                id.includes('mixtral') ||
-                id.includes('gemma') ||
-                id.includes('deepseek') ||
-                id.includes('qwen')) &&
               !id.includes('whisper') &&
               !id.includes('guard') &&
-              !id.includes('safeguard')
+              !id.includes('safeguard') &&
+              !id.includes('transcribe')
             );
           })
           .map((m: any) => ({
@@ -104,13 +100,20 @@ export async function POST(req: Request) {
           }));
       }
 
-      if (models.length === 0) {
-        models = [
-          { id: 'llama-3.3-70b-versatile', name: 'Groq — llama-3.3-70b-versatile (Recomendado)' },
-          { id: 'llama-3.1-8b-instant', name: 'Groq — llama-3.1-8b-instant (Ultra Rápido)' },
-          { id: 'deepseek-r1-distill-llama-70b', name: 'Groq — deepseek-r1-distill-llama-70b' },
-          { id: 'mixtral-8x7b-32768', name: 'Groq — mixtral-8x7b-32768' },
-        ];
+      // Ensure popular Groq models are present
+      const fallbackGroqList = [
+        { id: 'llama-3.3-70b-versatile', name: 'Groq — llama-3.3-70b-versatile (Recomendado)' },
+        { id: 'llama-3.1-8b-instant', name: 'Groq — llama-3.1-8b-instant (Ultra Rápido)' },
+        { id: 'deepseek-r1-distill-llama-70b', name: 'Groq — deepseek-r1-distill-llama-70b' },
+        { id: 'mixtral-8x7b-32768', name: 'Groq — mixtral-8x7b-32768' },
+        { id: 'gemma2-9b-it', name: 'Groq — gemma2-9b-it' },
+        { id: 'qwen-2.5-coder-32b', name: 'Groq — qwen-2.5-coder-32b' },
+      ];
+
+      for (const fb of fallbackGroqList) {
+        if (!models.some((m) => m.id === fb.id)) {
+          models.unshift(fb);
+        }
       }
     } else if (provider === 'openai') {
       const res = await fetch('https://api.openai.com/v1/models', {
