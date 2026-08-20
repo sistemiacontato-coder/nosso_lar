@@ -17,7 +17,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v7';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v8';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
@@ -101,14 +101,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [config, setConfig] = useState<AIConfig>(DEFAULT_CONFIG);
   const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
 
-  // Validation & Live Dynamic Models Fetching States
+  // Dynamic Validation States
   const [validatingPrimary, setValidatingPrimary] = useState(false);
   const [primaryValidated, setPrimaryValidated] = useState(false);
+  const [primaryProviderName, setPrimaryProviderName] = useState<string>('');
   const [primaryModels, setPrimaryModels] = useState<{ id: string; name: string }[]>([]);
   const [primaryStatus, setPrimaryStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [validatingFallback, setValidatingFallback] = useState(false);
   const [fallbackValidated, setFallbackValidated] = useState(false);
+  const [fallbackProviderName, setFallbackProviderName] = useState<string>('');
   const [fallbackModels, setFallbackModels] = useState<{ id: string; name: string }[]>([]);
   const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -117,16 +119,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       const stored = getStoredAIConfig();
       setConfig(stored);
 
-      // Auto-validate existing keys on open
       if (stored.primary.apiKey) {
-        setPrimaryValidated(true);
         fetchModelsForKey(stored.primary.apiKey, 'primary', stored.primary.model);
       } else {
         setPrimaryValidated(false);
       }
 
       if (stored.fallback.apiKey) {
-        setFallbackValidated(true);
         fetchModelsForKey(stored.fallback.apiKey, 'fallback', stored.fallback.model);
       } else {
         setFallbackValidated(false);
@@ -136,6 +135,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   const currentSection = activeTab === 'primary' ? config.primary : config.fallback;
   const isValidated = activeTab === 'primary' ? primaryValidated : fallbackValidated;
+  const providerDisplayName = activeTab === 'primary' ? primaryProviderName : fallbackProviderName;
   const currentModels = activeTab === 'primary' ? primaryModels : fallbackModels;
   const isValidating = activeTab === 'primary' ? validatingPrimary : validatingFallback;
   const currentStatus = activeTab === 'primary' ? primaryStatus : fallbackStatus;
@@ -156,10 +156,14 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       primary: prev.fallback,
       fallback: prev.primary,
     }));
-    // Swap validated states
+
     const tempVal = primaryValidated;
     setPrimaryValidated(fallbackValidated);
     setFallbackValidated(tempVal);
+
+    const tempProvName = primaryProviderName;
+    setPrimaryProviderName(fallbackProviderName);
+    setFallbackProviderName(tempProvName);
 
     const tempModels = primaryModels;
     setPrimaryModels(fallbackModels);
@@ -182,7 +186,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     });
   };
 
-  // Live Model Fetcher and Key Connection Validator via Backend API Route
+  // Live Model Fetcher and Key Connection Validator via Server Backend API Route
   const fetchModelsForKey = async (key: string, target: 'primary' | 'fallback', initialModelSelect?: string) => {
     if (!key.trim()) return;
 
@@ -205,15 +209,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       const models: { id: string; name: string }[] = json.models || [];
       const latency: number = json.latency || 200;
       const detectedProvider: AIProvider = json.provider || detectProvider(key);
+      const providerName: string = json.providerName || detectedProvider.toUpperCase();
 
       const statusObj = { ok: true, msg: `Conexão Validada (${latency}ms)` };
 
       if (target === 'primary') {
         setPrimaryValidated(true);
+        setPrimaryProviderName(providerName);
         setPrimaryModels(models);
         setPrimaryStatus(statusObj);
       } else {
         setFallbackValidated(true);
+        setFallbackProviderName(providerName);
         setFallbackModels(models);
         setFallbackStatus(statusObj);
       }
@@ -333,7 +340,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </Button>
           </div>
 
-          {/* Clean & Discreet Reader Form */}
+          {/* Clean Reader Form */}
           <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
             {/* Field 1: API Key */}
             <div className="space-y-1.5">
@@ -353,7 +360,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             </div>
 
-            {/* Field 2: Button to Test/Validate & Fetch Dynamic Models */}
+            {/* Field 2: Validate Button & Status */}
             <div className="flex items-center justify-between pt-1">
               <Button
                 type="button"
@@ -391,24 +398,37 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               )}
             </div>
 
-            {/* Field 3: Dynamic Model Selector (Appears ONLY after Validation!) */}
+            {/* Field 3: Display Identified Provider Name & Model Selector */}
             {isValidated && currentModels.length > 0 && (
-              <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
-                <Label htmlFor="model" className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  Modelos Disponíveis da Chave
-                </Label>
-                <select
-                  id="model"
-                  value={currentSection.model}
-                  onChange={(e) => updateCurrentSection({ model: e.target.value })}
-                  className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
-                >
-                  {currentModels.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+                {/* Provedor Identificado */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 text-xs">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-indigo-600" /> Inteligência Identificada:
+                  </span>
+                  <span className="font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider text-[11px]">
+                    {providerDisplayName}
+                  </span>
+                </div>
+
+                {/* Model Selector */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="model" className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    Selecione o Modelo para este Leitor
+                  </Label>
+                  <select
+                    id="model"
+                    value={currentSection.model}
+                    onChange={(e) => updateCurrentSection({ model: e.target.value })}
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
+                  >
+                    {currentModels.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
           </div>

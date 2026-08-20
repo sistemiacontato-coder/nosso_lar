@@ -14,10 +14,14 @@ export async function POST(req: Request) {
 
     // Auto-detect provider by prefix
     let provider = 'gemini';
+    let providerName = 'Google Gemini ♊';
+
     if (cleanKey.startsWith('gsk_')) {
       provider = 'groq';
+      providerName = 'Groq ⚡';
     } else if (cleanKey.startsWith('sk-')) {
       provider = 'openai';
+      providerName = 'OpenAI 🤖';
     } else if (
       cleanKey.startsWith('AIzaSy') ||
       cleanKey.startsWith('AIza') ||
@@ -26,6 +30,7 @@ export async function POST(req: Request) {
       cleanKey.length === 39
     ) {
       provider = 'gemini';
+      providerName = 'Google Gemini ♊';
     }
 
     let models: { id: string; name: string }[] = [];
@@ -43,20 +48,26 @@ export async function POST(req: Request) {
       const data = await res.json();
       if (data.models && Array.isArray(data.models)) {
         models = data.models
-          .filter((m: any) =>
-            m.supportedGenerationMethods?.includes('generateContent')
+          .filter(
+            (m: any) =>
+              m.supportedGenerationMethods?.includes('generateContent') &&
+              !m.name.includes('embedding') &&
+              !m.name.includes('aqa')
           )
           .map((m: any) => {
             const cleanId = m.name.replace('models/', '');
-            return { id: cleanId, name: cleanId };
+            return {
+              id: cleanId,
+              name: `Gemini — ${cleanId}`,
+            };
           });
       }
 
       if (models.length === 0) {
         models = [
-          { id: 'gemini-1.5-flash', name: 'gemini-1.5-flash' },
-          { id: 'gemini-1.5-pro', name: 'gemini-1.5-pro' },
-          { id: 'gemini-2.0-flash-exp', name: 'gemini-2.0-flash-exp' },
+          { id: 'gemini-1.5-flash', name: 'Gemini — gemini-1.5-flash (Super Rápido)' },
+          { id: 'gemini-1.5-pro', name: 'Gemini — gemini-1.5-pro (Raciocínio)' },
+          { id: 'gemini-2.0-flash-exp', name: 'Gemini — gemini-2.0-flash-exp' },
         ];
       }
     } else if (provider === 'groq') {
@@ -72,15 +83,33 @@ export async function POST(req: Request) {
 
       const data = await res.json();
       if (data.data && Array.isArray(data.data)) {
-        models = data.data.map((m: any) => ({ id: m.id, name: m.id }));
+        // Filter ONLY LLM text/chat models, exclude whisper, guardrails, compound
+        models = data.data
+          .filter((m: any) => {
+            const id = (m.id || '').toLowerCase();
+            return (
+              (id.includes('llama') ||
+                id.includes('mixtral') ||
+                id.includes('gemma') ||
+                id.includes('deepseek') ||
+                id.includes('qwen')) &&
+              !id.includes('whisper') &&
+              !id.includes('guard') &&
+              !id.includes('safeguard')
+            );
+          })
+          .map((m: any) => ({
+            id: m.id,
+            name: `Groq — ${m.id}`,
+          }));
       }
 
       if (models.length === 0) {
         models = [
-          { id: 'llama-3.3-70b-versatile', name: 'llama-3.3-70b-versatile' },
-          { id: 'llama-3.1-8b-instant', name: 'llama-3.1-8b-instant' },
-          { id: 'deepseek-r1-distill-llama-70b', name: 'deepseek-r1-distill-llama-70b' },
-          { id: 'mixtral-8x7b-32768', name: 'mixtral-8x7b-32768' },
+          { id: 'llama-3.3-70b-versatile', name: 'Groq — llama-3.3-70b-versatile (Recomendado)' },
+          { id: 'llama-3.1-8b-instant', name: 'Groq — llama-3.1-8b-instant (Ultra Rápido)' },
+          { id: 'deepseek-r1-distill-llama-70b', name: 'Groq — deepseek-r1-distill-llama-70b' },
+          { id: 'mixtral-8x7b-32768', name: 'Groq — mixtral-8x7b-32768' },
         ];
       }
     } else if (provider === 'openai') {
@@ -97,15 +126,24 @@ export async function POST(req: Request) {
       const data = await res.json();
       if (data.data && Array.isArray(data.data)) {
         models = data.data
-          .filter((m: any) => m.id.includes('gpt'))
-          .map((m: any) => ({ id: m.id, name: m.id }));
+          .filter(
+            (m: any) =>
+              m.id.includes('gpt') &&
+              !m.id.includes('instruct') &&
+              !m.id.includes('realtime') &&
+              !m.id.includes('audio')
+          )
+          .map((m: any) => ({
+            id: m.id,
+            name: `OpenAI — ${m.id}`,
+          }));
       }
 
       if (models.length === 0) {
         models = [
-          { id: 'gpt-4o-mini', name: 'gpt-4o-mini' },
-          { id: 'gpt-4o', name: 'gpt-4o' },
-          { id: 'gpt-3.5-turbo', name: 'gpt-3.5-turbo' },
+          { id: 'gpt-4o-mini', name: 'OpenAI — gpt-4o-mini' },
+          { id: 'gpt-4o', name: 'OpenAI — gpt-4o' },
+          { id: 'gpt-3.5-turbo', name: 'OpenAI — gpt-3.5-turbo' },
         ];
       }
     }
@@ -115,6 +153,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       provider,
+      providerName,
       models,
       latency,
     });
