@@ -1,8 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface AIServiceConfig {
+  provider?: string;
+  apiKey?: string;
+  model?: string;
+  customEndpoint?: string;
+}
+
+// Universal AI extractor function for any provider (Gemini, OpenAI, Groq, Custom)
+async function extractWithAIProvider(
+  cfg: AIServiceConfig,
+  textSample: string
+): Promise<any> {
+  const apiKey = cfg.apiKey || process.env.GEMINI_API_KEY;
+  const provider = cfg.provider || (apiKey?.startsWith('sk-') ? 'openai' : apiKey?.startsWith('gsk_') ? 'groq' : 'gemini');
+  const model = cfg.model || (provider === 'openai' ? 'gpt-4o-mini' : provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-1.5-flash');
+
+  if (!apiKey) return null;
+
+  const prompt = `Analise este texto de anúncio de apartamento para alugar e responda EXCLUSIVAMENTE em formato JSON válido sem explicações:
+{
+  "titulo": "Apelido limpo do prédio/condomínio sem repetir m² ou quartos",
+  "valorAluguel": 3800,
+  "valorCondominio": 800,
+  "valorIptu": 200,
+  "dormitorios": 3,
+  "suites": 1,
+  "banheiros": 2,
+  "vagasGaragem": 2,
+  "areaUtil": 80,
+  "duvidasCorretor": "Escreva 3 perguntas cruciais e específicas para o casal perguntar ao corretor sobre este imóvel."
+}
+
+Texto do anúncio:
+${textSample}`;
+
+  if (provider === 'gemini') {
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    if (!aiRes.ok) {
+      throw new Error(`Gemini API HTTP ${aiRes.status}`);
+    }
+
+    const aiJson = await aiRes.json();
+    const candidateText = aiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (candidateText) {
+      const cleanJsonStr = candidateText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJsonStr);
+    }
+  } else if (provider === 'openai' || provider === 'groq' || provider === 'custom') {
+    const endpoint =
+      cfg.customEndpoint ||
+      (provider === 'groq'
+        ? 'https://api.groq.com/openai/v1/chat/completions'
+        : 'https://api.openai.com/v1/chat/completions');
+
+    const aiRes = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+      }),
+    });
+
+    if (!aiRes.ok) {
+      throw new Error(`${provider.toUpperCase()} API HTTP ${aiRes.status}`);
+    }
+
+    const aiJson = await aiRes.json();
+    const content = aiJson.choices?.[0]?.message?.content;
+    if (content) {
+      const cleanJsonStr = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+      return JSON.parse(cleanJsonStr);
+    }
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { url, apiKey: clientApiKey, model: clientModel } = await req.json();
+    const body = await req.json();
+    const { url, apiKey: clientApiKey, model: clientModel, provider: clientProvider, primary, fallback, enableFallback = true } = body;
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json(
@@ -42,7 +135,7 @@ export async function POST(req: NextRequest) {
       return match ? match[1].trim() : '';
     };
 
-    // 1. Extrair Imagem Real (OpenGraph ou JSON-LD ou tags img)
+    // 1. Extrair Imagem Real
     let imageUrl =
       getMeta('og:image') ||
       getMeta('twitter:image') ||
@@ -78,7 +171,6 @@ export async function POST(req: NextRequest) {
     // 3. Extrair Descrição / Bairro
     const description = getMeta('og:description') || getMeta('description') || '';
 
-    // Detectar Bairro no título/descrição/URL
     let bairro = '';
     const fullText = (title + ' ' + description + ' ' + url).toLowerCase();
 
@@ -96,7 +188,7 @@ export async function POST(req: NextRequest) {
       bairro = 'Osasco / Zona Oeste';
     }
 
-    // 4. Extrair Valores Financeiros (Aluguel, Condomínio, IPTU)
+    // 4. Extrair Valores Financeiros
     let aluguel = 0;
     let condominio = 0;
     let iptu = 0;
@@ -116,7 +208,7 @@ export async function POST(req: NextRequest) {
     const iptuMatch = html.match(/iptu.*?:?\s*R\$\s*([\d\.,]+)/i);
     if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
 
-    // 5. Extrair Cômodos (Quartos, Suítes, Banheiros, Vagas, m²)
+    // 5. Extrair Cômodos
     let quartos = 3;
     let suites = 1;
     let banheiros = 2;
@@ -138,7 +230,7 @@ export async function POST(req: NextRequest) {
     const areaMatch = html.match(/(\d+)\s*(?:m²|m2|metros)/i);
     if (areaMatch) area = parseInt(areaMatch[1], 10);
 
-    // 6. Detectar Diferenciais no HTML
+    // 6. Detectar Diferenciais
     const detectedDiferenciais: string[] = [];
     const lowerHtml = html.toLowerCase();
 
@@ -157,67 +249,61 @@ export async function POST(req: NextRequest) {
     if (lowerHtml.includes('quadra')) detectedDiferenciais.push('Quadra de Tênis / Poliesportiva');
     if (lowerHtml.includes('salão de festas') || lowerHtml.includes('salao de festas')) detectedDiferenciais.push('Salão de Festas');
 
-    // Default AI generated questions for realtor
     let duvidasCorretor = `1. A vaga de garagem é livre ou presa?\n2. O valor do condomínio inclui água ou gás individualizado?\n3. Qual a garantia de locação aceita (caução, seguro fiança ou fiador)?`;
 
-    // 🤖 GOOGLE GEMINI AI INTEL EXTRACTION (IF API KEY IS PROVIDED)
-    const effectiveApiKey = clientApiKey || process.env.GEMINI_API_KEY;
-    const effectiveModel = clientModel || 'gemini-1.5-flash';
+    // 🤖 MULTI-PROVIDER AI EXTRACTION WITH REDUNDANCY / FALLBACK LOGIC
+    const textSample = (title + '\n' + description + '\n' + html.slice(0, 4000)).slice(0, 3000);
 
-    if (effectiveApiKey) {
-      try {
-        const textSample = (title + '\n' + description + '\n' + html.slice(0, 4000)).slice(0, 3000);
-        const prompt = `Analise este texto de anúncio de apartamento para alugar e responda EXCLUSIVAMENTE em formato JSON válido:
-{
-  "titulo": "Apelido limpo do prédio/condomínio sem repetir m² ou quartos",
-  "valorAluguel": 3800,
-  "valorCondominio": 800,
-  "valorIptu": 200,
-  "dormitorios": 3,
-  "suites": 1,
-  "banheiros": 2,
-  "vagasGaragem": 2,
-  "areaUtil": 80,
-  "duvidasCorretor": "Escreva 3 perguntas cruciais e específicas para o casal perguntar ao corretor sobre este imóvel."
-}
+    const primaryCfg: AIServiceConfig = primary || {
+      provider: clientProvider,
+      apiKey: clientApiKey,
+      model: clientModel,
+    };
 
-Texto do anúncio:
-${textSample}`;
+    const fallbackCfg: AIServiceConfig | null = enableFallback ? (fallback || null) : null;
 
-        const aiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${effectiveModel}:generateContent?key=${effectiveApiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-            }),
-          }
-        );
+    let aiResult: any = null;
+    let readerUsed = 'primary';
 
-        const aiJson = await aiRes.json();
-        const candidateText = aiJson.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (candidateText) {
-          const cleanJsonStr = candidateText.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const parsedAI = JSON.parse(cleanJsonStr);
-          if (parsedAI.titulo) title = parsedAI.titulo;
-          if (parsedAI.valorAluguel) aluguel = parsedAI.valorAluguel;
-          if (parsedAI.valorCondominio) condominio = parsedAI.valorCondominio;
-          if (parsedAI.valorIptu) iptu = parsedAI.valorIptu;
-          if (parsedAI.dormitorios) quartos = parsedAI.dormitorios;
-          if (parsedAI.suites !== undefined) suites = parsedAI.suites;
-          if (parsedAI.banheiros) banheiros = parsedAI.banheiros;
-          if (parsedAI.vagasGaragem !== undefined) vagas = parsedAI.vagasGaragem;
-          if (parsedAI.areaUtil) area = parsedAI.areaUtil;
-          if (parsedAI.duvidasCorretor) duvidasCorretor = parsedAI.duvidasCorretor;
-        }
-      } catch (aiErr) {
-        console.warn('Fallback para extração via regex (Gemini AI erro):', aiErr);
+    // Attempt 1: Try Primary Reader
+    try {
+      if (primaryCfg.apiKey || process.env.GEMINI_API_KEY) {
+        aiResult = await extractWithAIProvider(primaryCfg, textSample);
       }
+    } catch (primaryErr: any) {
+      console.warn('⚠️ 1º Leitor de IA falhou:', primaryErr.message);
+
+      // Attempt 2: Try Fallback Reader if Primary Failed
+      if (fallbackCfg && fallbackCfg.apiKey) {
+        try {
+          console.log('🔄 Acionando 2º Leitor (Fallback)...');
+          aiResult = await extractWithAIProvider(fallbackCfg, textSample);
+          if (aiResult) {
+            readerUsed = 'fallback';
+          }
+        } catch (fallbackErr: any) {
+          console.warn('⚠️ 2º Leitor (Fallback) também falhou:', fallbackErr.message);
+        }
+      }
+    }
+
+    // Apply AI Result if any reader succeeded
+    if (aiResult) {
+      if (aiResult.titulo) title = aiResult.titulo;
+      if (aiResult.valorAluguel) aluguel = aiResult.valorAluguel;
+      if (aiResult.valorCondominio) condominio = aiResult.valorCondominio;
+      if (aiResult.valorIptu) iptu = aiResult.valorIptu;
+      if (aiResult.dormitorios) quartos = aiResult.dormitorios;
+      if (aiResult.suites !== undefined) suites = aiResult.suites;
+      if (aiResult.banheiros) banheiros = aiResult.banheiros;
+      if (aiResult.vagasGaragem !== undefined) vagas = aiResult.vagasGaragem;
+      if (aiResult.areaUtil) area = aiResult.areaUtil;
+      if (aiResult.duvidasCorretor) duvidasCorretor = aiResult.duvidasCorretor;
     }
 
     return NextResponse.json({
       success: true,
+      readerUsed: aiResult ? readerUsed : 'regex',
       data: {
         titulo: title || 'Apartamento para Locação',
         urlImagem: imageUrl || '',

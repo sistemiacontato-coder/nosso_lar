@@ -13,22 +13,30 @@ import {
   RefreshCw,
   Zap,
   Globe,
+  ArrowLeftRight,
+  Layers,
 } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 
-export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v2';
+export const AI_CONFIG_KEY = 'nosso_lar_universal_ai_config_v4';
 
 export type AIProvider = 'gemini' | 'openai' | 'groq' | 'custom';
 
-export interface AIConfig {
+export interface AISingleConfig {
   provider: AIProvider;
   apiKey: string;
   model: string;
   customEndpoint?: string;
+}
+
+export interface AIConfig {
   enableAI: boolean;
+  enableFallback: boolean;
+  primary: AISingleConfig;
+  fallback: AISingleConfig;
 }
 
 export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> = {
@@ -52,420 +60,348 @@ export const DEFAULT_MODELS: Record<AIProvider, { id: string; name: string }[]> 
   ],
 };
 
+export const DEFAULT_CONFIG: AIConfig = {
+  enableAI: true,
+  enableFallback: true,
+  primary: {
+    provider: 'gemini',
+    apiKey: '',
+    model: 'gemini-1.5-flash',
+  },
+  fallback: {
+    provider: 'groq',
+    apiKey: '',
+    model: 'llama-3.3-70b-versatile',
+  },
+};
+
 export function getStoredAIConfig(): AIConfig {
-  if (typeof window === 'undefined') {
-    return { provider: 'gemini', apiKey: '', model: 'gemini-1.5-flash', enableAI: true };
-  }
+  if (typeof window === 'undefined') return DEFAULT_CONFIG;
   try {
     const raw = localStorage.getItem(AI_CONFIG_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
-  }
-  return { provider: 'gemini', apiKey: '', model: 'gemini-1.5-flash', enableAI: true };
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        enableAI: parsed.enableAI ?? true,
+        enableFallback: parsed.enableFallback ?? true,
+        primary: parsed.primary || {
+          provider: parsed.provider || 'gemini',
+          apiKey: parsed.apiKey || '',
+          model: parsed.model || 'gemini-1.5-flash',
+        },
+        fallback: parsed.fallback || DEFAULT_CONFIG.fallback,
+      };
+    }
+  } catch (e) {}
+  return DEFAULT_CONFIG;
 }
 
-export function SettingsModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [provider, setProvider] = useState<AIProvider>('gemini');
-  const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gemini-1.5-flash');
-  const [customEndpoint, setCustomEndpoint] = useState('');
-  const [enableAI, setEnableAI] = useState(true);
-  const [showKey, setShowKey] = useState(false);
+export function saveStoredAIConfig(config: AIConfig) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(config));
+  }
+}
 
-  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>(DEFAULT_MODELS.gemini);
-  const [isFetchingModels, setIsFetchingModels] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string; latencyMs?: number } | null>(null);
+interface SettingsModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+  const [config, setConfig] = useState<AIConfig>(DEFAULT_CONFIG);
+  const [activeTab, setActiveTab] = useState<'primary' | 'fallback'>('primary');
+
+  const [testingPrimary, setTestingPrimary] = useState(false);
+  const [primaryStatus, setPrimaryStatus] = useState<{ ok: boolean; msg: string; latency?: number } | null>(null);
+
+  const [testingFallback, setTestingFallback] = useState(false);
+  const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string; latency?: number } | null>(null);
 
   useEffect(() => {
     if (open) {
-      const cfg = getStoredAIConfig();
-      setProvider(cfg.provider || 'gemini');
-      setApiKey(cfg.apiKey || '');
-      setModel(cfg.model || 'gemini-1.5-flash');
-      setCustomEndpoint(cfg.customEndpoint || '');
-      setEnableAI(cfg.enableAI ?? true);
-      setTestResult(null);
-      setAvailableModels(DEFAULT_MODELS[cfg.provider || 'gemini'] || DEFAULT_MODELS.gemini);
+      setConfig(getStoredAIConfig());
     }
   }, [open]);
 
-  // Auto-Detect Provider based on API key prefix
-  const handleApiKeyChange = (val: string) => {
-    const cleanKey = val.trim();
-    setApiKey(cleanKey);
+  const currentSection = activeTab === 'primary' ? config.primary : config.fallback;
 
-    let detected: AIProvider | null = null;
-    if (cleanKey.startsWith('AIzaSy')) {
-      detected = 'gemini';
-    } else if (cleanKey.startsWith('sk-proj-') || cleanKey.startsWith('sk-admin-') || (cleanKey.startsWith('sk-') && !cleanKey.startsWith('gsk_'))) {
-      detected = 'openai';
-    } else if (cleanKey.startsWith('gsk_')) {
-      detected = 'groq';
-    }
-
-    if (detected && detected !== provider) {
-      setProvider(detected);
-      const defaultMods = DEFAULT_MODELS[detected] || [];
-      setAvailableModels(defaultMods);
-      if (defaultMods.length > 0) {
-        setModel(defaultMods[0].id);
-      }
-    }
+  const updateCurrentSection = (updates: Partial<AISingleConfig>) => {
+    setConfig((prev) => ({
+      ...prev,
+      [activeTab]: {
+        ...prev[activeTab],
+        ...updates,
+      },
+    }));
   };
 
-  const handleProviderChange = (newProvider: AIProvider) => {
-    setProvider(newProvider);
-    const mods = DEFAULT_MODELS[newProvider] || [];
-    setAvailableModels(mods);
-    if (mods.length > 0) {
-      setModel(mods[0].id);
-    }
+  // Swap Primary and Fallback Readers
+  const handleSwapReaders = () => {
+    setConfig((prev) => ({
+      ...prev,
+      primary: prev.fallback,
+      fallback: prev.primary,
+    }));
+    setPrimaryStatus(null);
+    setFallbackStatus(null);
   };
 
-  // Fetch Live Available Models from API Provider
-  const handleFetchLiveModels = async () => {
-    if (!apiKey.trim()) {
-      setTestResult({ success: false, message: 'Cole a Chave da API antes de buscar os modelos.' });
-      return;
-    }
+  // Auto detect provider by key prefix
+  const handleKeyChange = (val: string) => {
+    const key = val.trim();
+    let provider: AIProvider = currentSection.provider;
 
-    setIsFetchingModels(true);
-    setTestResult(null);
+    if (key.startsWith('AIzaSy')) provider = 'gemini';
+    else if (key.startsWith('sk-')) provider = 'openai';
+    else if (key.startsWith('gsk_')) provider = 'groq';
+
+    const defaultModel = DEFAULT_MODELS[provider]?.[0]?.id || currentSection.model;
+
+    updateCurrentSection({
+      apiKey: key,
+      provider,
+      model: defaultModel,
+    });
+  };
+
+  const handleTestConnection = async (target: 'primary' | 'fallback') => {
+    const targetCfg = target === 'primary' ? config.primary : config.fallback;
+    if (target === 'primary') setTestingPrimary(true);
+    else setTestingFallback(true);
+
+    const start = Date.now();
 
     try {
-      if (provider === 'gemini') {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
-        const data = await res.json();
-        if (data.models && Array.isArray(data.models)) {
-          const list = data.models
-            .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
-            .map((m: any) => ({
-              id: m.name.replace('models/', ''),
-              name: `${m.displayName || m.name} (${m.description ? m.description.slice(0, 40) + '...' : 'Gemini'})`,
-            }));
-          if (list.length > 0) {
-            setAvailableModels(list);
-            setModel(list[0].id);
-            setTestResult({ success: true, message: `✨ ${list.length} modelos Gemini detectados automaticamente!` });
-          }
-        } else {
-          throw new Error(data.error?.message || 'Falha ao listar modelos Gemini.');
-        }
-      } else if (provider === 'openai') {
-        const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { Authorization: `Bearer ${apiKey.trim()}` },
-        });
-        const data = await res.json();
-        if (data.data && Array.isArray(data.data)) {
-          const list = data.data
-            .filter((m: any) => m.id.includes('gpt'))
-            .map((m: any) => ({ id: m.id, name: `OpenAI ${m.id}` }));
-          if (list.length > 0) {
-            setAvailableModels(list);
-            setModel(list[0].id);
-            setTestResult({ success: true, message: `✨ ${list.length} modelos OpenAI detectados automaticamente!` });
-          }
-        } else {
-          throw new Error(data.error?.message || 'Chave OpenAI inválida.');
-        }
-      } else if (provider === 'groq') {
-        const res = await fetch('https://api.groq.com/openai/v1/models', {
-          headers: { Authorization: `Bearer ${apiKey.trim()}` },
-        });
-        const data = await res.json();
-        if (data.data && Array.isArray(data.data)) {
-          const list = data.data.map((m: any) => ({ id: m.id, name: `Groq ${m.id}` }));
-          if (list.length > 0) {
-            setAvailableModels(list);
-            setModel(list[0].id);
-            setTestResult({ success: true, message: `✨ ${list.length} modelos Groq detectados automaticamente!` });
-          }
-        } else {
-          throw new Error(data.error?.message || 'Chave Groq inválida.');
-        }
+      const res = await fetch('/api/extract-property', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://www.vivareal.com.br/imovel/apartamento-3-quartos-vila-yara-osasco-80m2-id-2904724653/',
+          apiKey: targetCfg.apiKey,
+          model: targetCfg.model,
+          provider: targetCfg.provider,
+          customEndpoint: targetCfg.customEndpoint,
+        }),
+      });
+
+      const json = await res.json();
+      const latency = Date.now() - start;
+
+      if (res.ok && json.success) {
+        const result = { ok: true, msg: `Conexão bem sucedida (${latency}ms)!`, latency };
+        if (target === 'primary') setPrimaryStatus(result);
+        else setFallbackStatus(result);
+      } else {
+        throw new Error(json.error || 'Erro na resposta da IA');
       }
     } catch (err: any) {
-      setTestResult({ success: false, message: `Erro ao detectar modelos: ${err.message}` });
+      const result = { ok: false, msg: err.message || 'Falha ao conectar.' };
+      if (target === 'primary') setPrimaryStatus(result);
+      else setFallbackStatus(result);
     } finally {
-      setIsFetchingModels(false);
-    }
-  };
-
-  // Test Connection Handler
-  const handleTestAPI = async () => {
-    if (!apiKey.trim()) {
-      setTestResult({ success: false, message: 'Insira a Chave da API para testar.' });
-      return;
-    }
-
-    setIsTesting(true);
-    setTestResult(null);
-    const startMs = Date.now();
-
-    try {
-      if (provider === 'gemini') {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Responda com 1 palavra: OK' }] }],
-          }),
-        });
-        const data = await res.json();
-        const latency = Date.now() - startMs;
-        if (res.ok && data.candidates) {
-          setTestResult({ success: true, message: `🤖 Conexão com Google Gemini (${model}) OK!`, latencyMs: latency });
-        } else {
-          throw new Error(data.error?.message || 'Chave do Gemini recusada.');
-        }
-      } else if (provider === 'openai' || provider === 'groq' || provider === 'custom') {
-        const endpoint = provider === 'openai'
-          ? 'https://api.openai.com/v1/chat/completions'
-          : provider === 'groq'
-          ? 'https://api.groq.com/openai/v1/chat/completions'
-          : customEndpoint || 'https://api.openai.com/v1/chat/completions';
-
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey.trim()}`,
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: 'Responda com 1 palavra: OK' }],
-            max_tokens: 10,
-          }),
-        });
-
-        const data = await res.json();
-        const latency = Date.now() - startMs;
-        if (res.ok && data.choices) {
-          setTestResult({ success: true, message: `⚡ Conexão com ${provider.toUpperCase()} (${model}) OK!`, latencyMs: latency });
-        } else {
-          throw new Error(data.error?.message || 'Falha ao autenticar.');
-        }
-      }
-    } catch (err: any) {
-      setTestResult({ success: false, message: `Erro de conexão: ${err.message}` });
-    } finally {
-      setIsTesting(false);
+      if (target === 'primary') setTestingPrimary(false);
+      else setTestingFallback(false);
     }
   };
 
   const handleSave = () => {
-    const cfg: AIConfig = {
-      provider,
-      apiKey: apiKey.trim(),
-      model,
-      customEndpoint: customEndpoint.trim(),
-      enableAI,
-    };
-    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
+    saveStoredAIConfig(config);
     onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} maxWidth="md">
+    <Dialog open={open} onOpenChange={onOpenChange} maxWidth="2xl">
       <div className="p-2 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/30">
-              <Cpu className="h-5 w-5 animate-pulse" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white font-bold text-lg shadow-md shadow-indigo-500/20">
+              <Cpu className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                Central de Inteligência Artificial Universal
+              <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                Motor de IA Multi-Provedor com Redundância (Fallback)
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Painel do Saymon (Masterdev): configure qualquer IA (Gemini, OpenAI, Groq, DeepSeek)
+                Se o 1º Leitor falhar, o 2º Leitor entra em ação automaticamente sem interromper a busca.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Provider Selector Switcher */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Selecione o Provedor de IA
-            </Label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-              {[
-                { id: 'gemini', label: 'Google Gemini', icon: Sparkles },
-                { id: 'openai', label: 'OpenAI ChatGPT', icon: Cpu },
-                { id: 'groq', label: 'Groq Llama', icon: Zap },
-                { id: 'custom', label: 'Personalizado', icon: Globe },
-              ].map((item) => {
-                const IconComp = item.icon;
-                const isSel = provider === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleProviderChange(item.id as AIProvider)}
-                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg text-[11px] font-bold transition-all ${
-                      isSel
-                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }`}
-                  >
-                    <IconComp className="h-4 w-4 mb-0.5" />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* API Key Input with Auto Detection */}
-          <div className="space-y-1.5">
-            <Label htmlFor="apiKey" className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>Chave da API ({provider.toUpperCase()} API Key)</span>
-              <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-full">
-                Auto-Detecção Ativa
+        <div className="py-4 space-y-4">
+          {/* Enable Redundancy Checkbox */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Redundância Automática (Fallback de IA)
               </span>
-            </Label>
-            <div className="relative">
-              <Key className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                id="apiKey"
-                type={showKey ? 'text' : 'password'}
-                placeholder={
-                  provider === 'gemini'
-                    ? 'Cole sua chave do Gemini (AIzaSy...)'
-                    : provider === 'openai'
-                    ? 'Cole sua chave da OpenAI (sk-...)'
-                    : 'Cole a sua chave de API...'
-                }
-                value={apiKey}
-                onChange={(e) => handleApiKeyChange(e.target.value)}
-                className="pl-10 pr-20 h-10 text-xs bg-slate-50 dark:bg-slate-950 rounded-xl font-mono"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-2 px-2 py-1 text-[10px] font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-              >
-                {showKey ? 'Ocultar' : 'Mostrar'}
-              </button>
             </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.enableFallback}
+                onChange={(e) => setConfig({ ...config, enableFallback: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
           </div>
 
-          {/* Custom Endpoint URL if provider === 'custom' */}
-          {provider === 'custom' && (
-            <div className="space-y-1.5">
-              <Label htmlFor="customEndpoint" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Endpoint da API Customizada (OpenAI Compatible)
-              </Label>
-              <Input
-                id="customEndpoint"
-                placeholder="https://api.deepseek.com/v1/chat/completions"
-                value={customEndpoint}
-                onChange={(e) => setCustomEndpoint(e.target.value)}
-                className="h-10 text-xs bg-slate-50 dark:bg-slate-950 rounded-xl"
-              />
-            </div>
-          )}
-
-          {/* Model Selector & Auto-Fetch Button */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="model" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Modelo de Inteligência Artificial Reconhecido
-              </Label>
+          {/* Reader Tab Switcher & Swap Button */}
+          <div className="flex items-center justify-between gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
+            <div className="flex gap-1 flex-1">
               <button
                 type="button"
-                onClick={handleFetchLiveModels}
-                disabled={isFetchingModels || !apiKey.trim()}
-                className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                onClick={() => setActiveTab('primary')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === 'primary'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
               >
-                {isFetchingModels ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3" />
-                )}
-                Buscar Modelos da Chave
+                <span>🥇 1º Leitor (Principal)</span>
+                {config.primary.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('fallback')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === 'fallback'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <span>🥈 2º Leitor (Fallback)</span>
+                {config.fallback.apiKey && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
               </button>
             </div>
 
-            <select
-              id="model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 font-semibold"
-            >
-              {availableModels.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.id})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Enable Switch */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-            <div>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                Ativar Leitura por IA ao Escanear Imóveis
-              </span>
-              <span className="text-[11px] text-slate-500">
-                Extrai fotos reais, condomínio, IPTU e gera dúvidas automáticas para o corretor.
-              </span>
-            </div>
-            <input
-              type="checkbox"
-              checked={enableAI}
-              onChange={(e) => setEnableAI(e.target.checked)}
-              className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-            />
-          </div>
-
-          {/* Test Button & Result Box */}
-          <div>
             <Button
               type="button"
               variant="outline"
-              onClick={handleTestAPI}
-              disabled={isTesting || !apiKey.trim()}
-              className="w-full h-10 text-xs font-bold border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300"
+              size="sm"
+              onClick={handleSwapReaders}
+              title="Alternar Leitor Principal e Secundário"
+              className="h-8 px-2 text-xs font-bold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 shrink-0"
             >
-              {isTesting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Testando Conexão com a IA...
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="mr-2 h-4 w-4 text-indigo-600" /> Testar Conexão com a IA
-                </>
-              )}
+              <ArrowLeftRight className="h-3.5 w-3.5 mr-1" /> Alternar 1º ↔ 2º
             </Button>
+          </div>
 
-            {testResult && (
-              <div
-                className={`mt-2 p-3 rounded-xl text-xs flex items-center justify-between gap-2 font-medium ${
-                  testResult.success
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                    : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {testResult.success ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
-                  )}
-                  <span>{testResult.message}</span>
-                </div>
-                {testResult.latencyMs && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                    {testResult.latencyMs} ms
-                  </span>
-                )}
+          {/* Current Reader Configuration Card */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5" /> Configurando {activeTab === 'primary' ? '1º Leitor (Principal)' : '2º Leitor (Fallback)'}
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 uppercase">
+                {currentSection.provider}
+              </span>
+            </div>
+
+            {/* API Key */}
+            <div className="space-y-1.5">
+              <Label htmlFor="apiKey" className="text-xs font-semibold">
+                Chave da API (API Key) <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Key className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Ex: AIzaSy... (Gemini) ou sk-... (OpenAI) ou gsk_... (Groq)"
+                  value={currentSection.apiKey}
+                  onChange={(e) => handleKeyChange(e.target.value)}
+                  className="pl-9 text-xs"
+                />
               </div>
-            )}
+              <p className="text-[11px] text-slate-400">
+                O provedor é reconhecido automaticamente a partir do prefixo da chave.
+              </p>
+            </div>
+
+            {/* Provider Selection */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {(['gemini', 'openai', 'groq', 'custom'] as AIProvider[]).map((prov) => (
+                <button
+                  key={prov}
+                  type="button"
+                  onClick={() =>
+                    updateCurrentSection({
+                      provider: prov,
+                      model: DEFAULT_MODELS[prov]?.[0]?.id || currentSection.model,
+                    })
+                  }
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize transition-all ${
+                    currentSection.provider === prov
+                      ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                  }`}
+                >
+                  {prov}
+                </button>
+              ))}
+            </div>
+
+            {/* Model Selection */}
+            <div className="space-y-1.5">
+              <Label htmlFor="model" className="text-xs font-semibold">
+                Modelo da Inteligência Artificial
+              </Label>
+              <select
+                id="model"
+                value={currentSection.model}
+                onChange={(e) => updateCurrentSection({ model: e.target.value })}
+                className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 font-medium"
+              >
+                {DEFAULT_MODELS[currentSection.provider]?.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Test Connection Button & Latency Status */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleTestConnection(activeTab)}
+                disabled={activeTab === 'primary' ? testingPrimary : testingFallback}
+                className="h-8 text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50"
+              >
+                {(activeTab === 'primary' ? testingPrimary : testingFallback) ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Testando Conexão...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-1.5 h-3.5 w-3.5" /> Testar Conexão com este Leitor
+                  </>
+                )}
+              </Button>
+
+              {(activeTab === 'primary' ? primaryStatus : fallbackStatus) && (
+                <span
+                  className={`text-xs font-bold flex items-center gap-1 ${
+                    (activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok
+                      ? 'text-emerald-600'
+                      : 'text-rose-500'
+                  }`}
+                >
+                  {(activeTab === 'primary' ? primaryStatus : fallbackStatus)?.ok ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  {(activeTab === 'primary' ? primaryStatus : fallbackStatus)?.msg}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -478,7 +414,7 @@ export function SettingsModal({ open, onOpenChange }: { open: boolean; onOpenCha
             onClick={handleSave}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20"
           >
-            Salvar Configurações da IA
+            Salvar Configurações de Fallback
           </Button>
         </DialogFooter>
       </div>

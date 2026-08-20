@@ -58,8 +58,9 @@ export function RealtorModal({ open, onOpenChange, onSubmitSuggestion, existingP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: targetUrl.trim(),
-          apiKey: aiCfg.apiKey,
-          model: aiCfg.model,
+          primary: aiCfg.primary,
+          fallback: aiCfg.fallback,
+          enableFallback: aiCfg.enableFallback,
         }),
       });
 
