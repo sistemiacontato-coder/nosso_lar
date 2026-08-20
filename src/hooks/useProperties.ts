@@ -287,6 +287,17 @@ export function useProperties() {
     [setProperties]
   );
 
+  const toggleArchiveProperty = useCallback(
+    (id: string) => {
+      setProperties((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isArquivado: !item.isArquivado } : item
+        )
+      );
+    },
+    [setProperties]
+  );
+
   const toggleComparison = useCallback((id: string) => {
     setSelectedForComparison((prev) => {
       if (prev.includes(id)) {
@@ -478,6 +489,7 @@ export function useProperties() {
     duplicateProperty,
     updateStatus,
     toggleFavorite,
+    toggleArchiveProperty,
     resetToSampleData,
     kpis,
   };

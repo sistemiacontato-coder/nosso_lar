@@ -54,6 +54,7 @@ export interface Property {
   telefoneCorretor?: string;
   dataCadastro: string; // ISO string
   isFavorito?: boolean;
+  isArquivado?: boolean;
 }
 
 export interface CommuteAnchors {

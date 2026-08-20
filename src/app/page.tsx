@@ -13,10 +13,10 @@ import { PropertyComparisonModal } from '@/components/PropertyComparisonModal';
 import { LoginModal } from '@/components/LoginModal';
 import { SettingsModal } from '@/components/SettingsModal';
 import { RealtorModal } from '@/components/RealtorModal';
+import { CommuteAnchorsModal } from '@/components/CommuteAnchorsModal';
 import { Footer } from '@/components/Footer';
 import { Property } from '@/types/property';
 import { PropertyFormValues } from '@/lib/schemas';
-import { Home } from 'lucide-react';
 
 function DashboardContent() {
   const {
@@ -45,11 +45,12 @@ function DashboardContent() {
     duplicateProperty,
     updateStatus,
     toggleFavorite,
+    toggleArchiveProperty,
     resetToSampleData,
     kpis,
   } = useProperties();
 
-  // DEFAULT VIEW MODE: TABLE / LIST (AS REQUESTED)
+  // DEFAULT VIEW MODE: TABLE / LIST
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Modal States
@@ -62,6 +63,7 @@ function DashboardContent() {
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRealtorOpen, setIsRealtorOpen] = useState(false);
+  const [isCommuteModalOpen, setIsCommuteModalOpen] = useState(false);
 
   // Handlers
   const handleOpenNew = () => {
@@ -79,53 +81,43 @@ function DashboardContent() {
     setIsDetailOpen(true);
   };
 
-  const handleFormSubmit = (values: PropertyFormValues) => {
-    if (editingProperty) {
-      updateProperty(editingProperty.id, values);
-    } else {
-      addProperty(values);
-    }
-  };
-
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este imóvel?')) {
+    if (confirm('Tem certeza que deseja excluir este imóvel?')) {
       deleteProperty(id);
       if (detailProperty?.id === id) {
         setIsDetailOpen(false);
+        setDetailProperty(null);
       }
+    }
+  };
+
+  const handleFormSubmit = (data: PropertyFormValues) => {
+    if (editingProperty) {
+      updateProperty(editingProperty.id, data);
+    } else {
+      addProperty(data);
     }
   };
 
   if (!isLoaded) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-500/30">
-            <Home className="h-6 w-6" />
-          </div>
-          <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-            Carregando Nosso Lar...
-          </span>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* Top Navigation Bar */}
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-rose-500 selection:text-white">
+      {/* Universal Top Header Navigation */}
       <Navbar
         onOpenNewProperty={handleOpenNew}
-        onOpenComparison={() => setIsComparisonOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        compareCount={selectedForComparison.length}
-        totalCount={totalCount}
+        onOpenRealtorModal={() => setIsRealtorOpen(true)}
+        sugestoesCount={sugestoesCount}
       />
 
-      {/* Login Dialog */}
-      <LoginModal />
-
-      {/* AI Settings Modal */}
+      {/* Settings Modal */}
       <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
 
       {/* Realtor Modal */}
@@ -136,7 +128,13 @@ function DashboardContent() {
         existingProperties={properties}
       />
 
-      {/* Main SaaS Width Container (Estilo Notion / Gmail / SaaS Moderno: max-w-[1600px]) */}
+      {/* Commute Anchors Modal */}
+      <CommuteAnchorsModal
+        open={isCommuteModalOpen}
+        onOpenChange={setIsCommuteModalOpen}
+      />
+
+      {/* Main SaaS Width Container */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Top KPIs Summary */}
         <HeaderKPIs kpis={kpis} onSelectProperty={handleSelectDetails} />
@@ -153,7 +151,7 @@ function DashboardContent() {
           totalOverall={totalCount}
         />
 
-        {/* View Mode Switching: Cards Grid vs Table (Default is Table Mode) */}
+        {/* View Mode Switching: Cards Grid vs Table */}
         {viewMode === 'grid' ? (
           <PropertyGrid
             properties={filteredProperties}
@@ -172,8 +170,7 @@ function DashboardContent() {
           />
         ) : (
           <PropertyTableView
-            properties={filteredProperties}
-            sugestoesProperties={sugestoesCorretores}
+            properties={properties}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onToggleFavorite={toggleFavorite}
@@ -184,11 +181,13 @@ function DashboardContent() {
             onQuickUpdateProperty={quickUpdateProperty}
             onApproveSuggestion={approveSuggestion}
             onOpenRealtorModal={() => setIsRealtorOpen(true)}
+            onOpenCommuteAnchorsModal={() => setIsCommuteModalOpen(true)}
+            onToggleArchive={toggleArchiveProperty}
           />
         )}
       </main>
 
-      {/* Official Sistemia Footer with Logo & WhatsApp Button */}
+      {/* Footer */}
       <Footer />
 
       {/* Form Modal (Create / Edit) */}
@@ -216,9 +215,9 @@ function DashboardContent() {
         open={isComparisonOpen}
         onOpenChange={setIsComparisonOpen}
         properties={comparisonProperties}
+        onEdit={handleEdit}
         onRemoveFromCompare={toggleComparison}
         onClearAll={clearComparison}
-        onEdit={handleEdit}
       />
     </div>
   );

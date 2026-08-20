@@ -9,18 +9,20 @@ import { useAuth } from '@/context/AuthContext';
 
 interface NavbarProps {
   onOpenNewProperty: () => void;
-  onOpenComparison: () => void;
+  onOpenComparison?: () => void;
   onOpenSettings?: () => void;
-  compareCount: number;
-  totalCount: number;
+  onOpenRealtorModal?: () => void;
+  compareCount?: number;
+  totalCount?: number;
+  sugestoesCount?: number;
 }
 
 export function Navbar({
   onOpenNewProperty,
   onOpenComparison,
   onOpenSettings,
-  compareCount,
-  totalCount,
+  compareCount = 0,
+  totalCount = 0,
 }: NavbarProps) {
   const { user, logout, setIsLoginModalOpen } = useAuth();
 
