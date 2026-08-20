@@ -28,6 +28,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
+import { getStoredCommuteAnchors } from './CommuteAnchorsModal';
 
 interface PropertyFormModalProps {
   open: boolean;
@@ -218,18 +219,19 @@ export function PropertyFormModal({
 
   const handleAutoExtract = () => handleAutoExtractWithUrl(extractUrl);
 
-  // Address lookup helper (OpenStreetMap Nominatim API for address suggestions & commute calculation)
+  // Address lookup helper (OpenStreetMap / API for address suggestions & commute calculation)
   const handleAddressSearch = async (query: string) => {
-    if (!query || query.length < 3) return;
+    if (!query || query.trim().length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
     setIsSearchingAddress(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query + ', São Paulo Brasil'
-        )}&limit=4`
-      );
-      const data = await res.json();
-      setAddressSuggestions(data || []);
+      const res = await fetch(`/api/geocode-address?q=${encodeURIComponent(query)}`);
+      const json = await res.json();
+      if (json.success) {
+        setAddressSuggestions(json.suggestions || []);
+      }
     } catch {
       setAddressSuggestions([]);
     } finally {
@@ -237,36 +239,47 @@ export function PropertyFormModal({
     }
   };
 
-  // Recalculate commute based on address / location selection with house number preservation
+  // Recalculate commute based on address / location selection with house number and full details preservation
   const handleSelectAddressSuggestion = (item: any) => {
     const rawInput = watch('endereco') || '';
     const numberMatch = rawInput.match(/(?:[,\s]+|^)(\d+)(?:\s+.*)?$/) || rawInput.match(/\b\d{1,5}\b/);
     const houseNum = numberMatch ? numberMatch[1] : null;
 
-    let display = item.display_name.split(',')[0] || item.display_name;
-    if (houseNum && !display.includes(houseNum)) {
-      display = `${display}, ${houseNum}`;
+    let fullAddress = item.displayName || item.display_name || item.shortTitle || rawInput;
+
+    if (houseNum && !fullAddress.includes(houseNum)) {
+      const parts = fullAddress.split(',');
+      if (parts.length > 0) {
+        parts[0] = `${parts[0].trim()}, ${houseNum}`;
+        fullAddress = parts.join(',');
+      } else {
+        fullAddress = `${fullAddress}, ${houseNum}`;
+      }
     }
 
-    setValue('endereco', display, { shouldValidate: true });
+    setValue('endereco', fullAddress, { shouldValidate: true });
     setAddressSuggestions([]);
 
-    // Recalculate commute times dynamically based on distance estimation
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-
-    if (lat && lon) {
-      const saymonDist = Math.hypot(lat - (-23.561), lon - (-46.655)) * 111; // km
-      const kellyDist = Math.hypot(lat - (-23.582), lon - (-46.681)) * 111; // km
-
-      const saymonMin = Math.max(10, Math.round(saymonDist * 3.2));
-      const kellyMin = Math.max(10, Math.round(kellyDist * 3.5));
-      const avgMin = Math.round((saymonMin + kellyMin) / 2);
-
-      setValue('tempoSaymonMinutos', saymonMin);
-      setValue('tempoKellyMinutos', kellyMin);
-      setValue('tempoAteTrabalhoMinutos', avgMin);
-    }
+    // Recalculate commute using fixed profile anchors & /api/calculate-commute
+    const storedAnchors = getStoredCommuteAnchors();
+    fetch('/api/calculate-commute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        propertyAddress: fullAddress,
+        saymonWork: storedAnchors.saymonWork,
+        kellyWork: storedAnchors.kellyWork,
+      }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) {
+          setValue('tempoSaymonMinutos', json.tempoSaymonMinutos);
+          setValue('tempoKellyMinutos', json.tempoKellyMinutos);
+          setValue('tempoAteTrabalhoMinutos', json.mediaTempoMinutos);
+        }
+      })
+      .catch(() => {});
   };
 
   // Watch for live total calculation

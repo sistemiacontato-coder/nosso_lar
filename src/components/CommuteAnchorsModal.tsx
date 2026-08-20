@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Save, Compass, Loader2, UserCheck, Heart } from 'lucide-react';
+import { MapPin, Save, Compass, Loader2, Heart } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -11,8 +11,8 @@ import { CommuteAnchors } from '@/types/property';
 export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v1';
 
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
-  saymonWork: 'Vila Olímpia / Faria Lima — São Paulo',
-  kellyWork: 'Pinheiros / Rebouças — São Paulo',
+  saymonWork: 'Avenida Brigadeiro Faria Lima, 3477, Itaim Bibi, São Paulo, SP, 04538-133, Brasil',
+  kellyWork: 'Avenida Paulista, 1000, Bela Vista, São Paulo, SP, 01310-100, Brasil',
 };
 
 export function getStoredCommuteAnchors(): CommuteAnchors {
@@ -71,7 +71,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
         const res = await fetch(`/api/geocode-address?q=${encodeURIComponent(val)}`);
         const json = await res.json();
         if (json.success) {
-          setSaymonSuggestions(json.suggestions);
+          setSaymonSuggestions(json.suggestions || []);
         }
       } catch (e) {
       } finally {
@@ -91,7 +91,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
         const res = await fetch(`/api/geocode-address?q=${encodeURIComponent(val)}`);
         const json = await res.json();
         if (json.success) {
-          setKellySuggestions(json.suggestions);
+          setKellySuggestions(json.suggestions || []);
         }
       } catch (e) {
       } finally {
@@ -102,32 +102,45 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
     }
   };
 
-  // Preserve typed house number if available
+  // Preserve typed house number and full details for Saymon
   const handleSelectSaymonSuggestion = (item: AddressSuggestion) => {
     const raw = anchors.saymonWork || '';
     const numberMatch = raw.match(/(?:[,\s]+|^)(\d+)(?:\s+.*)?$/) || raw.match(/\b\d{1,5}\b/);
     const houseNum = numberMatch ? numberMatch[1] : null;
 
-    let finalTitle = item.shortTitle;
-    if (houseNum && !finalTitle.includes(houseNum)) {
-      finalTitle = `${finalTitle}, ${houseNum}`;
+    let fullAddress = item.displayName || item.shortTitle || raw;
+    if (houseNum && !fullAddress.includes(houseNum)) {
+      const parts = fullAddress.split(',');
+      if (parts.length > 0) {
+        parts[0] = `${parts[0].trim()}, ${houseNum}`;
+        fullAddress = parts.join(',');
+      } else {
+        fullAddress = `${fullAddress}, ${houseNum}`;
+      }
     }
 
-    setAnchors((prev) => ({ ...prev, saymonWork: finalTitle }));
+    setAnchors((prev) => ({ ...prev, saymonWork: fullAddress }));
     setSaymonSuggestions([]);
   };
 
+  // Preserve typed house number and full details for Kelly
   const handleSelectKellySuggestion = (item: AddressSuggestion) => {
     const raw = anchors.kellyWork || '';
     const numberMatch = raw.match(/(?:[,\s]+|^)(\d+)(?:\s+.*)?$/) || raw.match(/\b\d{1,5}\b/);
     const houseNum = numberMatch ? numberMatch[1] : null;
 
-    let finalTitle = item.shortTitle;
-    if (houseNum && !finalTitle.includes(houseNum)) {
-      finalTitle = `${finalTitle}, ${houseNum}`;
+    let fullAddress = item.displayName || item.shortTitle || raw;
+    if (houseNum && !fullAddress.includes(houseNum)) {
+      const parts = fullAddress.split(',');
+      if (parts.length > 0) {
+        parts[0] = `${parts[0].trim()}, ${houseNum}`;
+        fullAddress = parts.join(',');
+      } else {
+        fullAddress = `${fullAddress}, ${houseNum}`;
+      }
     }
 
-    setAnchors((prev) => ({ ...prev, kellyWork: finalTitle }));
+    setAnchors((prev) => ({ ...prev, kellyWork: fullAddress }));
     setKellySuggestions([]);
   };
 
@@ -154,7 +167,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
                 Perfil do Casal — Cadastro Único de Endereços Fixos
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Cadastre aqui os pontos de referência fixos de Saymon & Kelly (ex: trabalho). O sistema recalculará automaticamente o deslocamento para todos os imóveis!
+                Ao selecionar o endereço, mantemos o número digitado e todas as informações completas (bairro, cidade, CEP). O sistema usará esses pontos fixos para recalcular automaticamente todos os imóveis!
               </DialogDescription>
             </div>
           </div>
@@ -165,7 +178,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
           <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-2 relative">
             <div className="flex items-center justify-between">
               <Label htmlFor="saymonWork" className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                <span className="text-base">🧑🏻‍🦱</span> Endereço Fixo de Interesse do Saymon
+                <span className="text-base">🧑🏻‍🦱</span> Endereço Fixo do Saymon (Trabalho / Interesse)
               </Label>
               <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">Saymon</span>
             </div>
@@ -174,7 +187,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
               <Input
                 id="saymonWork"
                 type="text"
-                placeholder="Digite a rua ou bairro do Saymon (ex: Av. Paulista, 1000)..."
+                placeholder="Digite o endereço completo com número (ex: Rua Miguel Rashid, 205)..."
                 value={anchors.saymonWork}
                 onChange={(e) => handleSaymonInputChange(e.target.value)}
                 className="pl-9 pr-8 text-xs bg-white dark:bg-slate-900"
@@ -186,16 +199,16 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
 
             {/* Suggestions dropdown for Saymon */}
             {saymonSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-xl py-1 text-xs">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-2xl py-1 text-xs">
                 {saymonSuggestions.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectSaymonSuggestion(item)}
-                    className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 flex items-start gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
                   >
-                    <MapPin className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                    <span className="truncate">{item.shortTitle}</span>
+                    <MapPin className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                    <span className="line-clamp-2 leading-relaxed">{item.displayName || item.shortTitle}</span>
                   </button>
                 ))}
               </div>
@@ -206,7 +219,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
           <div className="p-4 rounded-2xl bg-rose-50/60 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/60 space-y-2 relative">
             <div className="flex items-center justify-between">
               <Label htmlFor="kellyWork" className="text-xs font-bold text-rose-950 dark:text-rose-200 flex items-center gap-1.5">
-                <span className="text-base">👩🏻‍🦱</span> Endereço Fixo de Interesse da Kelly
+                <span className="text-base">👩🏻‍🦱</span> Endereço Fixo da Kelly (Trabalho / Interesse)
               </Label>
               <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wider">Kelly</span>
             </div>
@@ -215,7 +228,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
               <Input
                 id="kellyWork"
                 type="text"
-                placeholder="Digite a rua ou bairro da Kelly (ex: Faria Lima, 2000)..."
+                placeholder="Digite o endereço completo com número (ex: Av. Paulista, 1000)..."
                 value={anchors.kellyWork}
                 onChange={(e) => handleKellyInputChange(e.target.value)}
                 className="pl-9 pr-8 text-xs bg-white dark:bg-slate-900"
@@ -227,16 +240,16 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
 
             {/* Suggestions dropdown for Kelly */}
             {kellySuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-xl py-1 text-xs">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl py-1 text-xs">
                 {kellySuggestions.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectKellySuggestion(item)}
-                    className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-rose-950 flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-rose-950 flex items-start gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
                   >
-                    <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0" />
-                    <span className="truncate">{item.shortTitle}</span>
+                    <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
+                    <span className="line-clamp-2 leading-relaxed">{item.displayName || item.shortTitle}</span>
                   </button>
                 ))}
               </div>
@@ -256,7 +269,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave }: CommuteAncho
           >
             {isSaving ? (
               <>
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Atualizando Imóveis...
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Recalculando Todos os Imóveis...
               </>
             ) : (
               <>
