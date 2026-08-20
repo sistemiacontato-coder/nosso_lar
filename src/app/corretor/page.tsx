@@ -201,9 +201,6 @@ export default function CorretorPortalPage() {
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8">
         <div className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl p-6 sm:p-8 space-y-6">
           <div>
-            <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-1">
-              Envio Público Sem Login 🤖
-            </span>
             <h2 className="text-xl font-black text-slate-900 dark:text-white">
               Sugerir Imóvel para o Casal
             </h2>

@@ -313,11 +313,23 @@ export async function POST(req: NextRequest) {
       if (aiResult.duvidasCorretor) duvidasCorretor = aiResult.duvidasCorretor;
     }
 
+    let finalTitle = decodeHtmlEntities(title || '');
+    if (
+      !finalTitle ||
+      /oops|ops!|^ops$|não encontrada|nao encontrada|error|404/i.test(finalTitle)
+    ) {
+      if (url.includes('imoview')) finalTitle = 'Apartamento no Imoview';
+      else if (url.includes('vivareal')) finalTitle = 'Apartamento no VivaReal';
+      else if (url.includes('quintoandar')) finalTitle = 'Apartamento no QuintoAndar';
+      else if (url.includes('zapimoveis')) finalTitle = 'Apartamento no Zap Imóveis';
+      else finalTitle = 'Apartamento para Locação';
+    }
+
     return NextResponse.json({
       success: true,
       readerUsed: aiResult ? readerUsed : 'regex',
       data: {
-        titulo: decodeHtmlEntities(title || 'Apartamento para Locação'),
+        titulo: finalTitle,
         urlImagem: imageUrl || '',
         bairro: decodeHtmlEntities(bairro || 'Osasco / Zona Oeste'),
         valorAluguel: aluguel || 3800,
