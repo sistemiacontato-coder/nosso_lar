@@ -18,7 +18,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { Property, PropertyStatus, STATUS_CONFIG, getCoupleMatchBadge } from '@/types/property';
-import { formatCurrency, formatCurrencyPerM2, formatCommute, formatDistance } from '@/lib/utils';
+import { formatCurrency, formatCurrencyPerM2, formatCommute, formatDistance, decodeHtmlEntities } from '@/lib/utils';
 import { Dialog, DialogHeader } from './ui/dialog';
 import { Button } from './ui/button';
 
