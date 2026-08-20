@@ -93,13 +93,58 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
       }
     }
 
-    // 2. Secondary: OpenStreetMap Nominatim with Osasco / São Paulo Bounding Box Bias
+    // 2. Secondary: Photon Fuzzy Geocoder (Komoot OSM - Fast & Typo Tolerant)
     try {
-      const searchQ = cleanQuery.toLowerCase().includes('osasco') || cleanQuery.toLowerCase().includes('são paulo')
-        ? cleanQuery
-        : `${cleanQuery}, Osasco, São Paulo, Brasil`;
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=5&bbox=-47.3,-24.1,-46.1,-23.1`;
+      const pRes = await fetch(photonUrl, {
+        headers: { 'User-Agent': 'NossoLarApp/1.0' },
+      });
 
-      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-46.85,-23.60,-46.70,-23.50&bounded=0`;
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        if (pData?.features && Array.isArray(pData.features)) {
+          for (const feat of pData.features) {
+            const props = feat.properties || {};
+            const coords = feat.geometry?.coordinates || [];
+            const lon = coords[0];
+            const lat = coords[1];
+
+            if (lat && lon) {
+              const street = props.name || props.street || cleanQuery;
+              const houseNum = props.housenumber ? `, ${props.housenumber}` : '';
+              const district = props.district || props.locality || props.suburb || '';
+              const city = props.city || props.town || 'São Paulo';
+              const state = props.state || 'SP';
+
+              const shortTitle = [street + houseNum, district, city, state].filter(Boolean).join(', ');
+              const fullDisplay = [street + houseNum, district, city, state, props.postcode, props.country].filter(Boolean).join(', ');
+              const key = `photon-${props.osm_id || shortTitle}`;
+
+              if (!seenIds.has(key)) {
+                seenIds.add(key);
+                suggestions.push({
+                  id: key,
+                  displayName: fullDisplay,
+                  shortTitle: shortTitle,
+                  lat: parseFloat(lat),
+                  lon: parseFloat(lon),
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Photon API error:', e);
+    }
+
+    // 3. Fallback: OpenStreetMap Nominatim with clean query
+    try {
+      const searchQ = cleanQuery.toLowerCase().includes('sp') || cleanQuery.toLowerCase().includes('são paulo') || cleanQuery.toLowerCase().includes('osasco')
+        ? cleanQuery
+        : `${cleanQuery}, SP, Brasil`;
+
+      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-47.3,-24.1,-46.1,-23.1&bounded=0`;
       const nomRes = await fetch(nomUrl, {
         headers: {
           'User-Agent': 'NossoLarApp/1.0 (nosso-lar@sistemia.com.br)',
@@ -115,11 +160,11 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
             const road = address.road || address.pedestrian || address.suburb || item.display_name.split(',')[0];
             const houseNumber = address.house_number ? `, ${address.house_number}` : '';
             const suburb = address.suburb || address.neighbourhood || address.city_district || '';
-            const city = address.city || address.town || address.municipality || 'Osasco';
+            const city = address.city || address.town || address.municipality || 'São Paulo';
             const state = address.state || 'SP';
 
             const fullLabel = [road + houseNumber, suburb, city, state].filter(Boolean).join(', ');
-            const key = `${item.place_id || fullLabel}`;
+            const key = `nom-${item.place_id || fullLabel}`;
 
             if (!seenIds.has(key)) {
               seenIds.add(key);

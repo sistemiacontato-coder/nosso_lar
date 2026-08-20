@@ -417,7 +417,7 @@ export function PropertyTableView({
                     </td>
 
                     {/* TRAJETO */}
-                    <td className="py-3 px-3 whitespace-nowrap text-[11px]">
+                    <td className="py-3 px-3 whitespace-nowrap text-[11px] min-w-[130px]">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
                         <span title="Saymon (Trabalho)">👨🏻 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
                         <span className="text-slate-300">|</span>
