@@ -23,7 +23,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { Property, STATUS_CONFIG, getCoupleMatchBadge } from '@/types/property';
-import { formatCurrency, formatCurrencyPerM2 } from '@/lib/utils';
+import { formatCurrency, formatCurrencyPerM2, decodeHtmlEntities } from '@/lib/utils';
 import { PropertyCommentsModal } from './PropertyCommentsModal';
 
 interface PropertyTableViewProps {
