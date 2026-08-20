@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { CommuteAnchors } from '@/types/property';
 
-export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v2';
+export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v3';
 
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
   saymonAddress1: 'Miguel Rachid, 205, Osasco - SP',
@@ -20,14 +20,14 @@ export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
 export function getStoredCommuteAnchors(): CommuteAnchors {
   if (typeof window === 'undefined') return DEFAULT_COMMUTE_ANCHORS;
   try {
-    const raw = localStorage.getItem(COMMUTE_ANCHORS_KEY) || localStorage.getItem('nosso_lar_commute_anchors_v1');
+    const raw = localStorage.getItem(COMMUTE_ANCHORS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        saymonAddress1: parsed.saymonAddress1 || parsed.saymonWork || DEFAULT_COMMUTE_ANCHORS.saymonAddress1,
-        saymonAddress2: '',
-        kellyAddress1: parsed.kellyAddress1 || parsed.kellyWork || DEFAULT_COMMUTE_ANCHORS.kellyAddress1,
-        kellyAddress2: '',
+        saymonAddress1: parsed.saymonAddress1 || DEFAULT_COMMUTE_ANCHORS.saymonAddress1,
+        saymonAddress2: parsed.saymonAddress2 || '',
+        kellyAddress1: parsed.kellyAddress1 || DEFAULT_COMMUTE_ANCHORS.kellyAddress1,
+        kellyAddress2: parsed.kellyAddress2 || '',
       };
     }
   } catch (e) {}

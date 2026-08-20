@@ -73,7 +73,16 @@ function DashboardContent() {
   const [isRealtorOpen, setIsRealtorOpen] = useState(false);
   const [isCommuteModalOpen, setIsCommuteModalOpen] = useState(false);
 
-  const anchors = getStoredCommuteAnchors();
+  const [anchors, setAnchors] = useState<CommuteAnchors>(DEFAULT_COMMUTE_ANCHORS);
+
+  useEffect(() => {
+    setAnchors(getStoredCommuteAnchors());
+  }, [isCommuteModalOpen]);
+
+  const handleSaveCommuteAnchors = (newAnchors: CommuteAnchors) => {
+    setAnchors(newAnchors);
+    recalculateCommuteTimes(newAnchors);
+  };
 
   // Handlers
   const handleOpenNew = () => {
@@ -381,7 +390,7 @@ function DashboardContent() {
       <CommuteAnchorsModal
         open={isCommuteModalOpen}
         onOpenChange={setIsCommuteModalOpen}
-        onSave={recalculateCommuteTimes}
+        onSave={handleSaveCommuteAnchors}
       />
 
       {/* Form Modal (Create / Edit) */}
