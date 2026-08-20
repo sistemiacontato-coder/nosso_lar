@@ -21,6 +21,7 @@ import {
   Heart,
   Archive,
   RotateCcw,
+  Phone,
 } from 'lucide-react';
 import { Property, STATUS_CONFIG, getCoupleMatchBadge } from '@/types/property';
 import { formatCurrency, formatCurrencyPerM2, decodeHtmlEntities } from '@/lib/utils';
