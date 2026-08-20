@@ -244,32 +244,43 @@ export function PropertyTableView({
                     {/* Título & Bairro */}
                     <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
                       <div className="max-w-[176px]">
-                        <button
-                          type="button"
-                          onClick={() => onSelectDetails(prop)}
-                          className="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left line-clamp-1 transition-colors"
-                          title={decodeHtmlEntities(prop.titulo)}
-                        >
-                          {decodeHtmlEntities(prop.titulo)}
-                        </button>
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
-                          <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
-                          <span className="truncate">{decodeHtmlEntities(prop.bairro)}</span>
-                          {prop.andar && <span className="text-slate-400">({prop.andar})</span>}
+                        {/* Título com ícone de link sobreposto no canto inferior direito */}
+                        <div className="relative inline-block w-full">
+                          <button
+                            type="button"
+                            onClick={() => onSelectDetails(prop)}
+                            className="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left line-clamp-1 transition-colors w-full pr-4"
+                            title={decodeHtmlEntities(prop.titulo)}
+                          >
+                            {decodeHtmlEntities(prop.titulo)}
+                          </button>
                           {prop.urlAnuncio && (
                             <a
                               href={prop.urlAnuncio}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-indigo-500 hover:text-indigo-700 shrink-0 ml-1"
+                              className="absolute bottom-0 right-0 text-indigo-400 hover:text-indigo-600 transition-colors"
                               title="Abrir anúncio original"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <ExternalLink className="h-2.5 w-2.5" />
                             </a>
                           )}
                         </div>
 
-                        {/* Corretor Info Badge Single Horizontal Row */}
+                        {/* Bairro sem cidade (Osasco é sempre a cidade) */}
+                        <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                          <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
+                          <span className="truncate">
+                            {decodeHtmlEntities(prop.bairro)
+                              .replace(/[\s–\-,]+osasco[\s–\-,]*/gi, '')
+                              .replace(/[\s–\-,]+osasco$/gi, '')
+                              .trim()}
+                          </span>
+                          {prop.andar && <span className="text-slate-400">({prop.andar})</span>}
+                        </div>
+
+                        {/* Corretor Info Badge */}
                         {(prop.nomeCorretor || prop.telefoneCorretor || prop.isSugestao) && (
                           <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
                             <span className="flex items-center gap-1">
@@ -285,6 +296,7 @@ export function PropertyTableView({
                                   rel="noreferrer"
                                   className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline"
                                   title="Enviar WhatsApp"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <Phone className="h-2.5 w-2.5" />
                                   <span>{prop.telefoneCorretor}</span>

@@ -868,7 +868,9 @@ export function PropertyFormModal({
                   <select
                     id="notaSaymon"
                     {...register('notaSaymon')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
+                    className={`w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-xs focus:outline-none ${
+                      watch('notaSaymon') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'
+                    }`}
                   >
                     <option value="">— Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -884,7 +886,9 @@ export function PropertyFormModal({
                   <select
                     id="vereditoSaymon"
                     {...register('vereditoSaymon')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
+                    className={`w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-xs focus:outline-none ${
+                      watch('vereditoSaymon') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'
+                    }`}
                   >
                     <option value="">— Pendente</option>
                     <option value="Aprovado">😍 Aprovado</option>
@@ -919,7 +923,9 @@ export function PropertyFormModal({
                   <select
                     id="notaKelly"
                     {...register('notaKelly')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
+                    className={`w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-xs focus:outline-none ${
+                      watch('notaKelly') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'
+                    }`}
                   >
                     <option value="">— Sem Nota</option>
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -935,7 +941,9 @@ export function PropertyFormModal({
                   <select
                     id="vereditoKelly"
                     {...register('vereditoKelly')}
-                    className="w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 shadow-xs focus:outline-none"
+                    className={`w-full h-10 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-xs focus:outline-none ${
+                      watch('vereditoKelly') ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'
+                    }`}
                   >
                     <option value="">— Pendente</option>
                     <option value="Aprovada">😍 Aprovada</option>
