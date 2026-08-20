@@ -274,34 +274,28 @@ function DashboardContent() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Saymon Addresses */}
+                {/* Saymon Address */}
                 <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-300">
                     <User className="h-4 w-4 text-amber-600" />
-                    <span>Perfil Saymon (Até 2 locais de interesse)</span>
+                    <span>Perfil Saymon</span>
                   </div>
-                  <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
                     <p className="truncate">
-                      <strong>Local 1:</strong> {anchors.saymonAddress1 || 'Não cadastrado'}
-                    </p>
-                    <p className="truncate">
-                      <strong>Local 2:</strong> {anchors.saymonAddress2 || 'Não cadastrado'}
+                      <strong>Endereço:</strong> {anchors.saymonAddress1 || 'Não cadastrado'}
                     </p>
                   </div>
                 </div>
 
-                {/* Kelly Addresses */}
+                {/* Kelly Address */}
                 <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
                     <User className="h-4 w-4 text-rose-600" />
-                    <span>Perfil Kelly (Até 2 locais de interesse)</span>
+                    <span>Perfil Kelly</span>
                   </div>
-                  <div className="text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
                     <p className="truncate">
-                      <strong>Local 1:</strong> {anchors.kellyAddress1 || 'Não cadastrado'}
-                    </p>
-                    <p className="truncate">
-                      <strong>Local 2:</strong> {anchors.kellyAddress2 || 'Não cadastrado'}
+                      <strong>Endereço:</strong> {anchors.kellyAddress1 || 'Não cadastrado'}
                     </p>
                   </div>
                 </div>

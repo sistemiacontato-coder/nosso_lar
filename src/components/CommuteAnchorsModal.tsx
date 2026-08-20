@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Save, Compass, Loader2, Heart, Check } from 'lucide-react';
+import { MapPin, Save, Compass, Loader2, Heart, Check, Clock } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -13,8 +13,10 @@ export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v3';
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
   saymonAddress1: '',
   saymonAddress2: '',
+  saymonTime: '08:00',
   kellyAddress1: '',
   kellyAddress2: '',
+  kellyTime: '08:00',
 };
 
 export function getStoredCommuteAnchors(): CommuteAnchors {
@@ -26,8 +28,10 @@ export function getStoredCommuteAnchors(): CommuteAnchors {
       return {
         saymonAddress1: parsed.saymonAddress1 || '',
         saymonAddress2: parsed.saymonAddress2 || '',
+        saymonTime: parsed.saymonTime || '08:00',
         kellyAddress1: parsed.kellyAddress1 || '',
         kellyAddress2: parsed.kellyAddress2 || '',
+        kellyTime: parsed.kellyTime || '08:00',
       };
     }
   } catch (e) {}
@@ -206,6 +210,29 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                     ))}
                   </div>
                 )}
+
+                {/* Horário de Saída (Saymon) */}
+                <div className="pt-1 flex items-center justify-between">
+                  <Label htmlFor="saymonTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                    Horário de Saída Habitual (Pico):
+                  </Label>
+                  <select
+                    id="saymonTime"
+                    value={anchors.saymonTime || '08:00'}
+                    onChange={(e) => setAnchors((prev) => ({ ...prev, saymonTime: e.target.value }))}
+                    className="text-xs font-bold px-2 py-1 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 cursor-pointer shadow-xs"
+                  >
+                    <option value="07:00">07:00 (Pico Manhã)</option>
+                    <option value="07:30">07:30 (Pico Manhã)</option>
+                    <option value="08:00">08:00 (Pico Manhã)</option>
+                    <option value="08:30">08:30 (Pico Manhã)</option>
+                    <option value="09:00">09:00 (Pico Moderado)</option>
+                    <option value="12:00">12:00 (Fora de Pico)</option>
+                    <option value="17:30">17:30 (Pico Tarde)</option>
+                    <option value="18:00">18:00 (Pico Tarde)</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -264,6 +291,29 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                     ))}
                   </div>
                 )}
+
+                {/* Horário de Saída (Kelly) */}
+                <div className="pt-1 flex items-center justify-between">
+                  <Label htmlFor="kellyTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-rose-500" />
+                    Horário de Saída Habitual (Pico):
+                  </Label>
+                  <select
+                    id="kellyTime"
+                    value={anchors.kellyTime || '08:00'}
+                    onChange={(e) => setAnchors((prev) => ({ ...prev, kellyTime: e.target.value }))}
+                    className="text-xs font-bold px-2 py-1 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 cursor-pointer shadow-xs"
+                  >
+                    <option value="07:00">07:00 (Pico Manhã)</option>
+                    <option value="07:30">07:30 (Pico Manhã)</option>
+                    <option value="08:00">08:00 (Pico Manhã)</option>
+                    <option value="08:30">08:30 (Pico Manhã)</option>
+                    <option value="09:00">09:00 (Pico Moderado)</option>
+                    <option value="12:00">12:00 (Fora de Pico)</option>
+                    <option value="17:30">17:30 (Pico Tarde)</option>
+                    <option value="18:00">18:00 (Pico Tarde)</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}

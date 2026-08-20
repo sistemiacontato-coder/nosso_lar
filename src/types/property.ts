@@ -58,12 +58,13 @@ export interface Property {
   isArquivado?: boolean;
 }
 
-// Cadastro de até 2 Endereços de Interesse por perfil (Saymon e Kelly)
 export interface CommuteAnchors {
   saymonAddress1: string;
   saymonAddress2?: string;
+  saymonTime?: string; // ex: '08:00', '08:30', '18:00' (Pico)
   kellyAddress1: string;
   kellyAddress2?: string;
+  kellyTime?: string; // ex: '08:00', '08:30', '18:00' (Pico)
 
   // Backward compatibility aliases
   saymonWork?: string;

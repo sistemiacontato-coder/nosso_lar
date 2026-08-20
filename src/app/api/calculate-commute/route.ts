@@ -66,16 +66,45 @@ function haversineDistance(coords1: { lat: number; lon: number }, coords2: { lat
   return R * c;
 }
 
-// Estimate transit/driving time in minutes for Greater SP area
-function estimateCommuteMinutes(distanceKm: number): number {
-  if (distanceKm <= 1) return 10;
-  if (distanceKm <= 3) return 15;
-  if (distanceKm <= 5) return 20;
-  if (distanceKm <= 10) return 30;
-  if (distanceKm <= 15) return 40;
-  if (distanceKm <= 25) return 55;
-  if (distanceKm <= 35) return 70;
-  return Math.round(distanceKm * 2.2);
+// Helper to calculate traffic factor based on departure time
+function getTrafficFactor(departureTime?: string): number {
+  if (!departureTime) return 1.35; // Default peak traffic
+  const [hourStr, minStr] = departureTime.split(':');
+  const hour = parseInt(hourStr || '8', 10);
+  const min = parseInt(minStr || '0', 10);
+  const timeInDecimal = hour + min / 60;
+
+  // Morning Peak (07:00 - 09:30) -> High Traffic (1.45x)
+  if (timeInDecimal >= 7.0 && timeInDecimal <= 9.5) {
+    return 1.45;
+  }
+  // Evening Peak (17:00 - 19:30) -> High Traffic (1.50x)
+  if (timeInDecimal >= 17.0 && timeInDecimal <= 19.5) {
+    return 1.50;
+  }
+  // Off-Peak / Soft Hours (10:00 - 16:00, 20:00 - 06:30) -> Smooth Traffic (1.0x)
+  if (timeInDecimal >= 10.0 && timeInDecimal <= 16.0) {
+    return 1.10;
+  }
+  if (timeInDecimal >= 20.0 || timeInDecimal <= 6.5) {
+    return 1.0;
+  }
+
+  // Intermediate (06:30 - 07:00, 09:30 - 10:00, 16:00 - 17:00) -> Moderate (1.25x)
+  return 1.25;
+}
+
+// Estimate transit/driving time in minutes for Greater SP area based on distance and departure time
+function estimateCommuteMinutes(distanceKm: number, departureTime?: string): number {
+  const trafficFactor = getTrafficFactor(departureTime);
+  let baseMinutes = distanceKm * 2.0;
+  if (distanceKm <= 1) baseMinutes = 7;
+  else if (distanceKm <= 3) baseMinutes = 11;
+  else if (distanceKm <= 5) baseMinutes = 15;
+  else if (distanceKm <= 10) baseMinutes = 22;
+  else if (distanceKm <= 15) baseMinutes = 30;
+
+  return Math.max(5, Math.round(baseMinutes * trafficFactor));
 }
 
 export async function POST(req: NextRequest) {
@@ -85,8 +114,10 @@ export async function POST(req: NextRequest) {
       propertyAddress,
       saymonAddress1,
       saymonAddress2,
+      saymonTime,
       kellyAddress1,
       kellyAddress2,
+      kellyTime,
       saymonWork,
       kellyWork,
     } = body;
@@ -97,7 +128,7 @@ export async function POST(req: NextRequest) {
 
     const propCoords = await geocode(propertyAddress);
 
-    // Support both new 2-address format and legacy saymonWork/kellyWork
+    // Support both new format and legacy saymonWork/kellyWork
     const addrSaymon1 = saymonAddress1 || saymonWork || '';
     const addrSaymon2 = saymonAddress2 || '';
     const addrKelly1 = kellyAddress1 || kellyWork || '';
@@ -112,25 +143,25 @@ export async function POST(req: NextRequest) {
     let tempoKellyMinutos = 30;
 
     if (propCoords) {
-      // Calculate best commute time for Saymon from up to 2 addresses
+      // Calculate best commute time for Saymon from up to 2 addresses with departure time
       const timesSaymon: number[] = [];
       if (coordsSaymon1) {
-        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon1)));
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon1), saymonTime));
       }
       if (coordsSaymon2) {
-        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon2)));
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon2), saymonTime));
       }
       if (timesSaymon.length > 0) {
         tempoSaymonMinutos = Math.min(...timesSaymon);
       }
 
-      // Calculate best commute time for Kelly from up to 2 addresses
+      // Calculate best commute time for Kelly from up to 2 addresses with departure time
       const timesKelly: number[] = [];
       if (coordsKelly1) {
-        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly1)));
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly1), kellyTime));
       }
       if (coordsKelly2) {
-        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly2)));
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly2), kellyTime));
       }
       if (timesKelly.length > 0) {
         tempoKellyMinutos = Math.min(...timesKelly);
