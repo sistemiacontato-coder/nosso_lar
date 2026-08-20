@@ -114,8 +114,11 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
   const [fallbackModels, setFallbackModels] = useState<{ id: string; name: string }[]>([]);
   const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
   useEffect(() => {
     if (open) {
+      setResetMessage(null);
       const stored = getStoredAIConfig();
       setConfig(stored);
 
@@ -280,25 +283,33 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
         <div className="py-4 space-y-4">
           {/* Zerar Avaliações & Status */}
           {onClearRatings && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs">
-              <div>
-                <div className="font-bold text-rose-800 dark:text-rose-300">Zerar Notas & Status</div>
-                <div className="text-[11px] text-rose-600 dark:text-rose-400">
-                  Limpa todas as notas do Saymon e da Kelly e altera o status para "Para Analisar".
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs">
+                <div>
+                  <div className="font-bold text-rose-800 dark:text-rose-300">Zerar Notas & Status</div>
+                  <div className="text-[11px] text-rose-600 dark:text-rose-400">
+                    Limpa todas as notas do Saymon e da Kelly e altera o status para "Para Analisar".
+                  </div>
                 </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    onClearRatings();
+                    setResetMessage('Notas e vereditos zerados com sucesso!');
+                  }}
+                  className="shrink-0 text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950 border-rose-300 font-bold"
+                >
+                  Zerar Notas
+                </Button>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                type="button"
-                onClick={() => {
-                  onClearRatings();
-                  setFeedback('Notas e vereditos zerados com sucesso!');
-                }}
-                className="shrink-0 text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950 border-rose-300 font-bold"
-              >
-                Zerar Notas
-              </Button>
+              {resetMessage && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>{resetMessage}</span>
+                </div>
+              )}
             </div>
           )}
 
