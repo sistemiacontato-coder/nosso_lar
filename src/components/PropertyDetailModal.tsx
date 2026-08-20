@@ -318,18 +318,34 @@ export function PropertyDetailModal({
 
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-indigo-600" /> Logística e Deslocamento
+              <Clock className="h-4 w-4 text-indigo-600" /> Logística e Deslocamento do Casal
             </h4>
-            <div className="space-y-2.5 text-sm">
+            <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
                 <span className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-indigo-500" /> Tempo até o trabalho:
+                  <span className="text-base">🧔</span> Trabalho do Saymon:
                 </span>
                 <span className="font-bold text-slate-900 dark:text-white">
-                  {formatCommute(property.tempoAteTrabalhoMinutos)}
+                  {formatCommute(property.tempoSaymonMinutos ?? property.tempoAteTrabalhoMinutos)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                <span className="flex items-center gap-2">
+                  <span className="text-base">👩</span> Trabalho da Kelly:
+                </span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {formatCommute(property.tempoKellyMinutos ?? property.tempoAteTrabalhoMinutos)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-100 dark:border-slate-800 font-semibold">
+                <span className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <span className="text-base">💑</span> Média do Casal:
+                </span>
+                <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+                  {formatCommute(Math.round(((property.tempoSaymonMinutos ?? property.tempoAteTrabalhoMinutos) + (property.tempoKellyMinutos ?? property.tempoAteTrabalhoMinutos)) / 2))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 pt-1">
                 <span className="flex items-center gap-2">
                   <Navigation className="h-4 w-4 text-emerald-500" /> Estação de metrô/trem:
                 </span>

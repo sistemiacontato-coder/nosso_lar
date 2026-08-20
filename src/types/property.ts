@@ -43,6 +43,10 @@ export interface Property {
   mediaCasal: number; // (notaSaymon + notaKelly) / 2
   notaPessoal: number; // Média para compatibilidade
 
+  // Tempos de Deslocamento do Casal
+  tempoSaymonMinutos?: number;
+  tempoKellyMinutos?: number;
+
   observacoes?: string;
   duvidasCorretor?: string; // Dúvidas/Perguntas para fazer ao corretor
   isSugestao?: boolean; // Se verdadeiro, está na aba "Sugestões dos Corretores"
@@ -50,6 +54,11 @@ export interface Property {
   telefoneCorretor?: string;
   dataCadastro: string; // ISO string
   isFavorito?: boolean;
+}
+
+export interface CommuteAnchors {
+  saymonWork: string;
+  kellyWork: string;
 }
 
 export type PropertySortKey =
@@ -60,6 +69,9 @@ export type PropertySortKey =
   | 'precoTotal_desc'
   | 'precoM2_asc'
   | 'tempoTrabalho_asc'
+  | 'tempoSaymon_asc'
+  | 'tempoKelly_asc'
+  | 'mediaTempo_asc'
   | 'recente_desc'
   | 'area_desc';
 

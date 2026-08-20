@@ -386,6 +386,15 @@ export function useProperties() {
           return a.precoMetroQuadrado - b.precoMetroQuadrado;
         case 'tempoTrabalho_asc':
           return a.tempoAteTrabalhoMinutos - b.tempoAteTrabalhoMinutos;
+        case 'tempoSaymon_asc':
+          return (a.tempoSaymonMinutos ?? a.tempoAteTrabalhoMinutos) - (b.tempoSaymonMinutos ?? b.tempoAteTrabalhoMinutos);
+        case 'tempoKelly_asc':
+          return (a.tempoKellyMinutos ?? a.tempoAteTrabalhoMinutos) - (b.tempoKellyMinutos ?? b.tempoAteTrabalhoMinutos);
+        case 'mediaTempo_asc': {
+          const aAvg = ((a.tempoSaymonMinutos ?? a.tempoAteTrabalhoMinutos) + (a.tempoKellyMinutos ?? a.tempoAteTrabalhoMinutos)) / 2;
+          const bAvg = ((b.tempoSaymonMinutos ?? b.tempoAteTrabalhoMinutos) + (b.tempoKellyMinutos ?? b.tempoAteTrabalhoMinutos)) / 2;
+          return aAvg - bAvg;
+        }
         case 'area_desc':
           return b.areaUtil - a.areaUtil;
         case 'recente_desc':

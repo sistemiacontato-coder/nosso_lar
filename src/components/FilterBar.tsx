@@ -168,7 +168,9 @@ export function FilterBar({
               <option value="precoTotal_asc">Menor Custo Total</option>
               <option value="precoTotal_desc">Maior Custo Total</option>
               <option value="precoM2_asc">Menor R$/m²</option>
-              <option value="tempoTrabalho_asc">Mais Perto do Trabalho</option>
+              <option value="tempoSaymon_asc">Mais Perto do Saymon 🧔</option>
+              <option value="tempoKelly_asc">Mais Perto da Kelly 👩</option>
+              <option value="mediaTempo_asc">Menor Média Deslocamento 💑</option>
               <option value="area_desc">Maior Área (m²)</option>
               <option value="recente_desc">Mais Recentes</option>
             </select>

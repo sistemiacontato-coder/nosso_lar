@@ -19,6 +19,8 @@ export const INITIAL_PROPERTIES: Property[] = [
     areaUtil: 84,
     precoMetroQuadrado: 63.4,
     tempoAteTrabalhoMinutos: 25,
+    tempoSaymonMinutos: 20,
+    tempoKellyMinutos: 30,
     distanciaMetroKm: 2.1,
     diferenciais: [
       'Varanda Gourmet',

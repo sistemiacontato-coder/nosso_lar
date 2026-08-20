@@ -85,6 +85,8 @@ export function RealtorModal({ open, onOpenChange, onSubmitSuggestion, existingP
         vagasGaragem: d.vagasGaragem || 2,
         areaUtil: d.areaUtil || 80,
         tempoAteTrabalhoMinutos: 25,
+        tempoSaymonMinutos: 25,
+        tempoKellyMinutos: 30,
         distanciaMetroKm: 1.5,
         diferenciais: d.diferenciais || [],
         status: 'Para Analisar',

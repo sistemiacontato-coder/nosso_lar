@@ -52,6 +52,14 @@ export const propertyFormSchema = z.object({
     .number({ invalid_type_error: 'Informe o tempo em minutos' })
     .min(0, 'Tempo não pode ser negativo')
     .default(30),
+  tempoSaymonMinutos: z.coerce
+    .number({ invalid_type_error: 'Informe o tempo do Saymon' })
+    .min(0, 'Tempo não pode ser negativo')
+    .default(25),
+  tempoKellyMinutos: z.coerce
+    .number({ invalid_type_error: 'Informe o tempo da Kelly' })
+    .min(0, 'Tempo não pode ser negativo')
+    .default(30),
   distanciaMetroKm: z.coerce
     .number({ invalid_type_error: 'Informe a distância em km' })
     .min(0, 'Distância não pode ser negativa')

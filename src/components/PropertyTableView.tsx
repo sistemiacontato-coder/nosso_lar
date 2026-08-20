@@ -143,8 +143,8 @@ export function PropertyTableView({
               <th className="py-3 px-3 whitespace-nowrap" title="Nota da Kelly (1 a 5 Estrelas)">
                 Kelly 👩
               </th>
-              <th className="py-3 px-3 whitespace-nowrap" title="Média das Notas do Casal">
-                Média
+              <th className="py-3 px-3 whitespace-nowrap cursor-help" title="Tempo de Deslocamento de Saymon (🧔), Kelly (👩) e Média do Casal (💑)">
+                Deslocamento 🚗
               </th>
               <th className="py-3 px-3 text-right whitespace-nowrap">
                 Ações
@@ -316,12 +316,16 @@ export function PropertyTableView({
                         </div>
                       </td>
 
-                      {/* MEDIA CASAL */}
-                      <td className="py-3 px-3 whitespace-nowrap font-bold text-sm text-slate-900 dark:text-white">
-                        <span className="inline-flex items-center gap-1">
-                          <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
-                          {prop.mediaCasal}
-                        </span>
+                      {/* DESLOCAMENTO (Saymon 🧔, Kelly 👩, e Média 💑) */}
+                      <td className="py-3 px-3 whitespace-nowrap text-[11px]">
+                        <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                          <span title="Saymon (Trabalho)">🧔 {prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
+                          <span className="text-slate-300">|</span>
+                          <span title="Kelly (Trabalho)">👩 {prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos}m</span>
+                        </div>
+                        <div className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                          💑 Média: {Math.round(((prop.tempoSaymonMinutos ?? prop.tempoAteTrabalhoMinutos) + (prop.tempoKellyMinutos ?? prop.tempoAteTrabalhoMinutos)) / 2)} min
+                        </div>
                       </td>
 
                       {/* ACTIONS */}

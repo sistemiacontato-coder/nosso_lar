@@ -65,6 +65,8 @@ export function PropertyFormModal({
     vagasGaragem: 2,
     areaUtil: 80,
     tempoAteTrabalhoMinutos: 25,
+    tempoSaymonMinutos: 25,
+    tempoKellyMinutos: 30,
     distanciaMetroKm: 1.5,
     diferenciais: ['Varanda Gourmet', 'Portaria 24h / Blindada', 'Piscina', 'Academia'],
     status: 'Para Analisar',
@@ -607,22 +609,34 @@ export function PropertyFormModal({
             <Clock className="h-3.5 w-3.5" /> 4. Logística e Deslocamento
           </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="tempoAteTrabalhoMinutos">
-                Tempo até o Trabalho (em minutos)
+              <Label htmlFor="tempoSaymonMinutos">
+                Trabalho do Saymon 🧔 (minutos)
               </Label>
               <Input
-                id="tempoAteTrabalhoMinutos"
+                id="tempoSaymonMinutos"
                 type="number"
-                placeholder="Ex: 25"
-                {...register('tempoAteTrabalhoMinutos')}
+                placeholder="Ex: 20"
+                {...register('tempoSaymonMinutos')}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="tempoKellyMinutos">
+                Trabalho da Kelly 👩 (minutos)
+              </Label>
+              <Input
+                id="tempoKellyMinutos"
+                type="number"
+                placeholder="Ex: 30"
+                {...register('tempoKellyMinutos')}
               />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="distanciaMetroKm">
-                Distância até o Metrô / Trem (em km)
+                Distância até Metrô / Trem 🚉 (km)
               </Label>
               <Input
                 id="distanciaMetroKm"
