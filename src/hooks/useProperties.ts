@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Property, PropertyFilters, PropertySortKey, PropertyStatus } from '@/types/property';
+import { Property, PropertyFilters, PropertySortKey, PropertyStatus, CommuteAnchors } from '@/types/property';
 import { INITIAL_PROPERTIES } from '@/lib/initialData';
 import { useLocalStorage } from './useLocalStorage';
 import { calculateTotals } from '@/lib/utils';
