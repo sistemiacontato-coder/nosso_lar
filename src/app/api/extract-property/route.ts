@@ -32,7 +32,7 @@ async function extractWithAIProvider(
 
   const prompt = `Analise este texto de anúncio de apartamento para alugar e responda EXCLUSIVAMENTE em formato JSON válido sem explicações:
 {
-  "titulo": "Apelido limpo do prédio/condomínio sem repetir m² ou quartos",
+  "titulo": "Apelido CURTO do prédio/condomínio. MÁXIMO 30 CARACTERES. Sem m², sem quartos, sem cidade. Ex: Residencial Cândido Mota",
   "valorAluguel": 3800,
   "valorCondominio": 800,
   "valorIptu": 200,
@@ -323,6 +323,11 @@ export async function POST(req: NextRequest) {
       else if (url.includes('quintoandar')) finalTitle = 'Apartamento no QuintoAndar';
       else if (url.includes('zapimoveis')) finalTitle = 'Apartamento no Zap Imóveis';
       else finalTitle = 'Apartamento para Locação';
+    }
+
+    // Truncate to max 30 chars (user requirement)
+    if (finalTitle.length > 30) {
+      finalTitle = finalTitle.slice(0, 30).trimEnd();
     }
 
     return NextResponse.json({

@@ -135,8 +135,11 @@ export function PropertyTableView({
           {/* Header */}
           <thead className="bg-slate-100/80 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800/90 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th className="py-2.5 px-2 text-center whitespace-nowrap" title="Comparar imóveis">
-                Comp.
+              <th
+                className="py-2.5 px-1 w-6 text-center whitespace-nowrap cursor-help"
+                title="Comparar Imóveis — Marque até 3 imóveis para abrir a tela de comparação lado a lado"
+              >
+                ☑
               </th>
               <th className="py-2.5 px-2 text-center whitespace-nowrap" title="Foto do Imóvel">
                 Foto
