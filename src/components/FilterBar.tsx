@@ -50,7 +50,7 @@ export function FilterBar({
     onFilterChange({ ...filters, search: e.target.value });
   };
 
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = (status: PropertyStatus | 'todos') => {
     onFilterChange({ ...filters, status });
   };
 
@@ -63,10 +63,11 @@ export function FilterBar({
   };
 
   const handleToggleDifferential = (tag: string) => {
-    const exists = filters.diferenciais.includes(tag);
+    const list = filters.diferenciais || [];
+    const exists = list.includes(tag);
     const updated = exists
-      ? filters.diferenciais.filter((d) => d !== tag)
-      : [...filters.diferenciais, tag];
+      ? list.filter((d) => d !== tag)
+      : [...list, tag];
     onFilterChange({ ...filters, diferenciais: updated });
   };
 
@@ -90,7 +91,7 @@ export function FilterBar({
     filters.precoMax ||
     filters.dormitoriosMin ||
     filters.vagasMin ||
-    filters.diferenciais.length > 0 ||
+    (filters.diferenciais?.length || 0) > 0 ||
     filters.apenasFavoritos ||
     filters.apenasMatchPerfeito ||
     filters.tempoMaxTrabalho;
@@ -372,7 +373,7 @@ export function FilterBar({
             </label>
             <div className="flex flex-wrap gap-1.5">
               {AVAILABLE_DIFFERENTIALS.map((tag) => {
-                const isSelected = filters.diferenciais.includes(tag);
+                const isSelected = (filters.diferenciais || []).includes(tag);
                 return (
                   <button
                     key={tag}

@@ -194,11 +194,11 @@ export function useProperties() {
             status: values.status,
 
             notaSaymon: nSaymon,
-            vereditoSaymon: values.vereditoSaymon,
+            vereditoSaymon: values.vereditoSaymon ? (values.vereditoSaymon as any) : undefined,
             opiniaoSaymon: values.opiniaoSaymon?.trim() || undefined,
 
             notaKelly: nKelly,
-            vereditoKelly: values.vereditoKelly,
+            vereditoKelly: values.vereditoKelly ? (values.vereditoKelly as any) : undefined,
             opiniaoKelly: values.opiniaoKelly?.trim() || undefined,
 
             mediaCasal: mediaCasal,
@@ -399,7 +399,7 @@ export function useProperties() {
         return false;
       }
 
-      if (filters.diferenciais.length > 0) {
+      if (filters.diferenciais && filters.diferenciais.length > 0) {
         const hasAllTags = filters.diferenciais.every((tag) =>
           prop.diferenciais.includes(tag)
         );

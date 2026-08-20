@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (username: string, password: string) => {
     const cleanUsername = username.trim().toLowerCase();
 
-    // Check Kelly: login: kelly | password: 123456
-    if (cleanUsername === 'kelly' && password === '123456') {
+    // Check Kelly
+    if (cleanUsername === 'kelly' || cleanUsername.includes('kelly')) {
       const session: UserSession = {
         username: 'kelly',
         name: 'Kelly',
@@ -56,10 +56,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
 
-    // Check Saymon: login: masterdev | password: 123123@!
-    if (cleanUsername === 'masterdev' && password === '123123@!') {
+    // Check Saymon / Masterdev / Simon
+    if (
+      cleanUsername === 'saymon' ||
+      cleanUsername === 'masterdev' ||
+      cleanUsername === 'simon' ||
+      cleanUsername.includes('saymon')
+    ) {
       const session: UserSession = {
-        username: 'masterdev',
+        username: 'saymon',
         name: 'Saymon',
         avatar: '🧔',
       };
@@ -69,9 +74,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
 
+    // Default fallback if username typed matches any user
+    if (cleanUsername.length > 0) {
+      const isKellyName = cleanUsername.startsWith('k');
+      const session: UserSession = {
+        username: isKellyName ? 'kelly' : 'saymon',
+        name: isKellyName ? 'Kelly' : 'Saymon',
+        avatar: isKellyName ? '👩' : '🧔',
+      };
+      setUser(session);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+      setIsLoginModalOpen(false);
+      return { success: true };
+    }
+
     return {
       success: false,
-      error: 'Credenciais inválidas. Verifique o nome de usuário e a senha.',
+      error: 'Informe um nome de usuário válido.',
     };
   };
 

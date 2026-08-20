@@ -25,6 +25,7 @@ export interface Property {
   banheiros: number;
   vagasGaragem: number;
   areaUtil: number; // em m²
+  andar?: string; // ex: 5º andar, Térreo, Andar Alto
   precoMetroQuadrado: number; // custoTotalMensal / areaUtil
   tempoAteTrabalhoMinutos: number;
   distanciaMetroKm: number;
@@ -57,9 +58,16 @@ export interface Property {
   isArquivado?: boolean;
 }
 
+// Cadastro de até 2 Endereços de Interesse por perfil (Saymon e Kelly)
 export interface CommuteAnchors {
-  saymonWork: string;
-  kellyWork: string;
+  saymonAddress1: string;
+  saymonAddress2?: string;
+  kellyAddress1: string;
+  kellyAddress2?: string;
+
+  // Backward compatibility aliases
+  saymonWork?: string;
+  kellyWork?: string;
 }
 
 export type PropertySortKey =
@@ -78,128 +86,96 @@ export type PropertySortKey =
 
 export interface PropertyFilters {
   search: string;
-  status: string; // 'todos' | PropertyStatus
+  status: PropertyStatus | 'todos';
+  minBedrooms?: number;
+  maxPrice?: number;
+  onlyFavorites?: boolean;
+  onlyMatchCasal?: boolean;
+  apenasFavoritos?: boolean;
+  apenasMatchPerfeito?: boolean;
+  diferenciais?: string[];
   precoMax?: number;
   dormitoriosMin?: number;
   vagasMin?: number;
-  diferenciais: string[];
-  apenasFavoritos: boolean;
-  apenasMatchPerfeito: boolean;
   tempoMaxTrabalho?: number;
+}
+
+export interface KPIStats {
+  total: number;
+  mediaCusto: number;
+  menorCustoTotal: Property | null;
+  maisPertoTrabalho: Property | null;
+  topCasalMatch: Property | null;
+  favoritoSaymon: Property | null;
+  favoritaKelly: Property | null;
 }
 
 export const AVAILABLE_DIFFERENTIALS = [
   'Varanda Gourmet',
-  'Varanda / Sacada',
-  'Armários Planejados',
-  'Ar-Condicionado',
-  'Aceita Pet',
-  'Mobiliado',
-  'Semi-Mobiliado',
-  'Academia',
-  'Piscina',
-  'Piscina Aquecida',
-  'Churrasqueira',
-  'Quadra de Tênis / Poliesportiva',
-  'Salão de Festas',
   'Portaria 24h / Blindada',
-  'Elevador',
+  'Piscina',
+  'Academia',
+  'Salão de Festas',
+  'Churrasqueira',
+  'Pet Friendly',
+  'Playground',
+  'Ar Condicionado',
+  'Armários Planejados',
+  'Próximo ao Metrô / Trem',
+  'Vaga Livre / Demarcada',
   'Sol da Manhã',
   'Andar Alto',
-  'Vista Livre',
-  'Próximo a Parques / Shoppings',
-  'Coworking no Prédio',
-  'Lavanderia Coletiva',
 ] as const;
 
 export const STATUS_CONFIG: Record<
   PropertyStatus,
-  { label: string; color: string; bg: string; border: string; text: string }
+  { label: string; bg: string; text: string; border: string }
 > = {
   'Para Analisar': {
     label: 'Para Analisar',
-    color: 'slate',
-    bg: 'bg-slate-500/10 dark:bg-slate-500/20',
-    border: 'border-slate-500/30',
-    text: 'text-slate-700 dark:text-slate-300 font-medium text-xs',
+    bg: 'bg-blue-50 dark:bg-blue-950/60',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-200 dark:border-blue-800',
   },
   'Agendar Visita': {
     label: 'Agendar Visita',
-    color: 'sky',
-    bg: 'bg-sky-500/10 dark:bg-sky-500/20',
-    border: 'border-sky-500/30',
-    text: 'text-sky-700 dark:text-sky-300 font-medium text-xs',
+    bg: 'bg-amber-50 dark:bg-amber-950/60',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-200 dark:border-amber-800',
   },
   'Visita Agendada': {
     label: 'Visita Agendada',
-    color: 'indigo',
-    bg: 'bg-indigo-500/10 dark:bg-indigo-500/20',
-    border: 'border-indigo-500/30',
-    text: 'text-indigo-700 dark:text-indigo-300 font-medium text-xs',
+    bg: 'bg-purple-50 dark:bg-purple-950/60',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-200 dark:border-purple-800',
   },
   'Pendente Avaliação': {
     label: 'Pendente Avaliação',
-    color: 'blue',
-    bg: 'bg-blue-500/15 dark:bg-blue-500/25',
-    border: 'border-blue-500/40',
-    text: 'text-blue-800 dark:text-blue-300 font-semibold text-xs',
+    bg: 'bg-indigo-50 dark:bg-indigo-950/60',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-200 dark:border-indigo-800',
   },
   'Proposta Enviada': {
     label: 'Proposta Enviada',
-    color: 'emerald',
-    bg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
-    border: 'border-emerald-500/40',
-    text: 'text-emerald-800 dark:text-emerald-300 font-semibold text-xs',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
   },
-  'Descartado': {
+  Descartado: {
     label: 'Descartado',
-    color: 'rose',
-    bg: 'bg-rose-500/10 dark:bg-rose-500/20',
-    border: 'border-rose-500/30',
-    text: 'text-rose-700 dark:text-rose-300 font-medium text-xs',
+    bg: 'bg-rose-50 dark:bg-rose-950/60',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-200 dark:border-rose-800',
   },
 };
 
-export function getCoupleMatchBadge(notaSaymon: number, notaKelly: number): {
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-} {
+export function getCoupleMatchBadge(notaSaymon: number, notaKelly: number) {
   const media = (notaSaymon + notaKelly) / 2;
-  const diff = Math.abs(notaSaymon - notaKelly);
-
-  if (notaSaymon >= 4 && notaKelly >= 4 && diff <= 1) {
-    return {
-      label: 'Sintonia Perfeita 💖',
-      color: 'text-rose-600 dark:text-rose-400',
-      bg: 'bg-rose-50 dark:bg-rose-950/60',
-      border: 'border-rose-200 dark:border-rose-800',
-    };
+  if (media >= 4.5) {
+    return { label: 'Sintonia Perfeita 💖', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-950/80', border: 'border-rose-200 dark:border-rose-800' };
   }
-
-  if (media >= 4) {
-    return {
-      label: 'Muito Bem Avaliado ⭐',
-      color: 'text-amber-600 dark:text-amber-400',
-      bg: 'bg-amber-50 dark:bg-amber-950/60',
-      border: 'border-amber-200 dark:border-amber-800',
-    };
+  if (media >= 3.5) {
+    return { label: 'Boa Escolha 👍', color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/80', border: 'border-indigo-200 dark:border-indigo-800' };
   }
-
-  if (diff >= 2) {
-    return {
-      label: 'Divergência ⚡',
-      color: 'text-purple-600 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-950/60',
-      border: 'border-purple-200 dark:border-purple-800',
-    };
-  }
-
-  return {
-    label: 'Avaliado',
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/60',
-    border: 'border-blue-200 dark:border-blue-800',
-  };
+  return { label: 'Opiniões Divergentes ⚡', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/80', border: 'border-amber-200 dark:border-amber-800' };
 }

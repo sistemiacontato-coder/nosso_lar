@@ -308,6 +308,27 @@ export function RealtorModal({ open, onOpenChange, onSubmitSuggestion, existingP
                     {extractedData.vagasGaragem} vaga{extractedData.vagasGaragem > 1 ? 's' : ''} {isVagasOk ? '✅' : '⚠️'}
                   </div>
                 </div>
+
+                {/* Pergunta sobre o Andar do Apartamento */}
+                <div className="pt-2 border-t border-indigo-200/60 dark:border-indigo-800/60 space-y-1">
+                  <Label htmlFor="andarInputModal" className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                    <span>🏢 Qual é o andar do apartamento?</span>
+                    <span className="text-[10px] text-slate-400 font-normal">opcional</span>
+                  </Label>
+                  <Input
+                    id="andarInputModal"
+                    type="text"
+                    placeholder="Ex: 8º andar (ou Térreo, Andar Alto...)"
+                    value={extractedData.andar || ''}
+                    onChange={(e) => {
+                      setExtractedData({
+                        ...extractedData,
+                        andar: e.target.value,
+                      });
+                    }}
+                    className="text-xs h-9 bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 rounded-xl"
+                  />
+                </div>
               </div>
             )}
 

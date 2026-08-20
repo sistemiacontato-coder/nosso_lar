@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 // Geocodes an address string into lat/lon
 async function geocode(address: string): Promise<{ lat: number; lon: number } | null> {
+  if (!address || address.trim().length < 3) return null;
   try {
     const searchQuery = address.toLowerCase().includes('sp') || address.toLowerCase().includes('são paulo') || address.toLowerCase().includes('osasco')
       ? address
@@ -58,27 +59,60 @@ function estimateCommuteMinutes(distanceKm: number): number {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { propertyAddress, saymonWork, kellyWork } = body;
+    const {
+      propertyAddress,
+      saymonAddress1,
+      saymonAddress2,
+      kellyAddress1,
+      kellyAddress2,
+      saymonWork,
+      kellyWork,
+    } = body;
 
     if (!propertyAddress) {
       return NextResponse.json({ success: false, error: 'Property address missing' }, { status: 400 });
     }
 
     const propCoords = await geocode(propertyAddress);
-    const saymonCoords = saymonWork ? await geocode(saymonWork) : null;
-    const kellyCoords = kellyWork ? await geocode(kellyWork) : null;
+
+    // Support both new 2-address format and legacy saymonWork/kellyWork
+    const addrSaymon1 = saymonAddress1 || saymonWork || '';
+    const addrSaymon2 = saymonAddress2 || '';
+    const addrKelly1 = kellyAddress1 || kellyWork || '';
+    const addrKelly2 = kellyAddress2 || '';
+
+    const coordsSaymon1 = await geocode(addrSaymon1);
+    const coordsSaymon2 = await geocode(addrSaymon2);
+    const coordsKelly1 = await geocode(addrKelly1);
+    const coordsKelly2 = await geocode(addrKelly2);
 
     let tempoSaymonMinutos = 25;
     let tempoKellyMinutos = 30;
 
-    if (propCoords && saymonCoords) {
-      const distSaymon = haversineDistance(propCoords, saymonCoords);
-      tempoSaymonMinutos = estimateCommuteMinutes(distSaymon);
-    }
+    if (propCoords) {
+      // Calculate best commute time for Saymon from up to 2 addresses
+      const timesSaymon: number[] = [];
+      if (coordsSaymon1) {
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon1)));
+      }
+      if (coordsSaymon2) {
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon2)));
+      }
+      if (timesSaymon.length > 0) {
+        tempoSaymonMinutos = Math.min(...timesSaymon);
+      }
 
-    if (propCoords && kellyCoords) {
-      const distKelly = haversineDistance(propCoords, kellyCoords);
-      tempoKellyMinutos = estimateCommuteMinutes(distKelly);
+      // Calculate best commute time for Kelly from up to 2 addresses
+      const timesKelly: number[] = [];
+      if (coordsKelly1) {
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly1)));
+      }
+      if (coordsKelly2) {
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly2)));
+      }
+      if (timesKelly.length > 0) {
+        tempoKellyMinutos = Math.min(...timesKelly);
+      }
     }
 
     return NextResponse.json({

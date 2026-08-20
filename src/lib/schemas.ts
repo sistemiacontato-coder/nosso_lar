@@ -48,6 +48,7 @@ export const propertyFormSchema = z.object({
   areaUtil: z.coerce
     .number({ invalid_type_error: 'Informe a área em m²' })
     .min(10, 'A área útil mínima é de 10 m²'),
+  andar: z.string().optional().or(z.literal('')),
   tempoAteTrabalhoMinutos: z.coerce
     .number({ invalid_type_error: 'Informe o tempo em minutos' })
     .min(0, 'Tempo não pode ser negativo')
@@ -74,15 +75,15 @@ export const propertyFormSchema = z.object({
     'Descartado',
   ]).default('Para Analisar'),
 
-  // Avaliação do Saymon
-  notaSaymon: z.coerce.number().min(1).max(5).default(4),
+  // Avaliação do Saymon (opcional para novo cadastro)
+  notaSaymon: z.coerce.number().min(1).max(5).optional().or(z.literal('')),
   opiniaoSaymon: z.string().optional().or(z.literal('')),
-  vereditoSaymon: z.enum(['Aprovado', 'Gostei', 'Neutro', 'Não Curti']).default('Gostei'),
+  vereditoSaymon: z.enum(['Aprovado', 'Gostei', 'Neutro', 'Não Curti']).optional().or(z.literal('')),
 
-  // Avaliação da Kelly
-  notaKelly: z.coerce.number().min(1).max(5).default(4),
+  // Avaliação da Kelly (opcional para novo cadastro)
+  notaKelly: z.coerce.number().min(1).max(5).optional().or(z.literal('')),
   opiniaoKelly: z.string().optional().or(z.literal('')),
-  vereditoKelly: z.enum(['Aprovada', 'Gostei', 'Neutra', 'Não Curti']).default('Gostei'),
+  vereditoKelly: z.enum(['Aprovada', 'Gostei', 'Neutra', 'Não Curti']).optional().or(z.literal('')),
 
   observacoes: z.string().optional().or(z.literal('')),
   duvidasCorretor: z.string().optional().or(z.literal('')),

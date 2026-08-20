@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+function decodeHtmlEntities(str: string | undefined | null): string {
+  if (!str) return '';
+  return str
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
 interface AIServiceConfig {
   provider?: string;
   apiKey?: string;
@@ -305,9 +317,9 @@ export async function POST(req: NextRequest) {
       success: true,
       readerUsed: aiResult ? readerUsed : 'regex',
       data: {
-        titulo: title || 'Apartamento para Locação',
+        titulo: decodeHtmlEntities(title || 'Apartamento para Locação'),
         urlImagem: imageUrl || '',
-        bairro: bairro || 'Osasco / Zona Oeste',
+        bairro: decodeHtmlEntities(bairro || 'Osasco / Zona Oeste'),
         valorAluguel: aluguel || 3800,
         valorCondominio: condominio || 800,
         valorIptu: iptu || 200,
@@ -317,8 +329,8 @@ export async function POST(req: NextRequest) {
         vagasGaragem: vagas,
         areaUtil: area,
         diferenciais: detectedDiferenciais,
-        observacoes: description.slice(0, 300),
-        duvidasCorretor: duvidasCorretor,
+        observacoes: decodeHtmlEntities(description.slice(0, 300)),
+        duvidasCorretor: decodeHtmlEntities(duvidasCorretor),
       },
     });
   } catch (error: any) {

@@ -244,68 +244,71 @@ export default function CorretorPortalPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* 1. Identification */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+              {/* 1. Identification - Single Row Layout */}
+              <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
                   1. Seus Dados de Contato
                 </span>
                 
-                {/* Nome */}
-                <div className="space-y-1">
-                  <Label htmlFor="nomeCorretor" className="text-xs font-semibold">
-                    Seu Nome / Imobiliária <span className="text-rose-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="nomeCorretor"
-                      placeholder="Ex: Carlos Silva (Imobiliária XYZ)"
-                      value={nomeCorretor}
-                      onChange={(e) => setNomeCorretor(e.target.value)}
-                      className="pl-9 text-xs"
-                      required
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  {/* Seu Nome / Imobiliária (col-span-6) */}
+                  <div className="sm:col-span-6 space-y-1">
+                    <Label htmlFor="nomeCorretor" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Seu Nome / Imobiliária <span className="text-rose-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="nomeCorretor"
+                        placeholder="Ex: Juca"
+                        value={nomeCorretor}
+                        onChange={(e) => setNomeCorretor(e.target.value)}
+                        className="pl-9 text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* DDD e Número Separados */}
-                <div className="grid grid-cols-3 gap-3">
-                  {/* DDD */}
-                  <div className="space-y-1 col-span-1">
-                    <Label htmlFor="dddCorretor" className="text-xs font-semibold">
+                  {/* DDD (col-span-2) */}
+                  <div className="sm:col-span-2 space-y-1">
+                    <Label htmlFor="dddCorretor" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                       DDD <span className="text-rose-500">*</span>
                     </Label>
                     <Input
                       id="dddCorretor"
-                      placeholder="Ex: 11"
-                      maxLength={2}
+                      placeholder="11"
                       value={dddCorretor}
+                      maxLength={2}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                        setDddCorretor(val);
+                        const onlyNums = e.target.value.replace(/\D/g, '').slice(0, 2);
+                        setDddCorretor(onlyNums);
                       }}
-                      className="text-xs text-center font-bold"
+                      className="text-xs h-10 text-center font-bold bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
                       required
                     />
                   </div>
 
-                  {/* Número de Celular */}
-                  <div className="space-y-1 col-span-2">
-                    <Label htmlFor="numeroCorretor" className="text-xs font-semibold">
-                      Número Celular / WhatsApp <span className="text-rose-500">*</span>
+                  {/* Número Celular / WhatsApp (col-span-4) */}
+                  <div className="sm:col-span-4 space-y-1">
+                    <Label htmlFor="numeroCorretor" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Celular / WhatsApp <span className="text-rose-500">*</span>
                     </Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                       <Input
                         id="numeroCorretor"
-                        placeholder="Ex: 98139-4841"
-                        maxLength={10} // 9 digits + 1 hyphen
+                        placeholder="98139-4841"
                         value={numeroCorretor}
+                        maxLength={10}
                         onChange={(e) => {
-                          const formatted = formatPhoneNumber(e.target.value);
+                          const rawDigits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                          let formatted = rawDigits;
+                          if (rawDigits.length > 4) {
+                            formatted = `${rawDigits.slice(0, rawDigits.length - 4)}-${rawDigits.slice(rawDigits.length - 4)}`;
+                          }
                           setNumeroCorretor(formatted);
                         }}
-                        className="pl-9 text-xs font-semibold"
+                        className="pl-9 text-xs h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl font-medium"
                         required
                       />
                     </div>
@@ -406,6 +409,27 @@ export default function CorretorPortalPage() {
                       <span className="block text-[10px] uppercase font-bold text-slate-400">Garagem</span>
                       {extractedData.vagasGaragem} vaga{extractedData.vagasGaragem > 1 ? 's' : ''} {isVagasOk ? '✅' : '⚠️'}
                     </div>
+                  </div>
+
+                  {/* Pergunta sobre o Andar do Apartamento */}
+                  <div className="pt-2.5 border-t border-indigo-200/60 dark:border-indigo-800/60 space-y-1">
+                    <Label htmlFor="andarInput" className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                      <span>🏢 Qual é o andar do apartamento?</span>
+                      <span className="text-[10px] text-slate-400 font-normal">opcional</span>
+                    </Label>
+                    <Input
+                      id="andarInput"
+                      type="text"
+                      placeholder="Ex: 8º andar (ou Térreo, Andar Alto...)"
+                      value={extractedData.andar || ''}
+                      onChange={(e) => {
+                        setExtractedData({
+                          ...extractedData,
+                          andar: e.target.value,
+                        });
+                      }}
+                      className="text-xs h-9 bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 rounded-xl"
+                    />
                   </div>
                 </div>
               )}

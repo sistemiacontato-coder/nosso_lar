@@ -257,6 +257,7 @@ export function PropertyTableView({
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5">
                           <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
                           <span className="truncate">{decodeHtmlEntities(prop.bairro)}</span>
+                          {prop.andar && <span className="text-slate-400">({prop.andar})</span>}
                           {prop.urlAnuncio && (
                             <a
                               href={prop.urlAnuncio}
@@ -269,6 +270,24 @@ export function PropertyTableView({
                             </a>
                           )}
                         </div>
+
+                        {/* Corretor Info Badge */}
+                        {(prop.nomeCorretor || prop.telefoneCorretor || prop.isSugestao) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                            <span>👔 {prop.nomeCorretor || 'Corretor'}</span>
+                            {prop.telefoneCorretor && (
+                              <a
+                                href={`https://wa.me/55${prop.telefoneCorretor.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-emerald-600 dark:text-emerald-400 hover:underline"
+                                title="Enviar mensagem no WhatsApp"
+                              >
+                                📞 {prop.telefoneCorretor}
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
 

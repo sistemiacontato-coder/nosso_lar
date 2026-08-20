@@ -185,7 +185,51 @@ export function PropertyDetailModal({
           </div>
         </div>
 
-        {/* SECTION: SAYMON & KELLY COUPLE OPINIONS */}
+        {/* SECTION: REALTOR CONTACT INFO */}
+        {(property.nomeCorretor || property.telefoneCorretor || property.isSugestao) && (
+          <div className="rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 dark:from-indigo-950/40 dark:to-blue-950/40 p-4 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-lg shadow-sm">
+                  👔
+                </div>
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                    Dados do Corretor / Imobiliária
+                  </span>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                    {property.nomeCorretor || 'Corretor Parceiro'}
+                  </h4>
+                </div>
+              </div>
+
+              {property.telefoneCorretor && (
+                <a
+                  href={`https://wa.me/55${property.telefoneCorretor.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all hover:scale-105"
+                >
+                  <span>💬 WhatsApp Corretor</span>
+                </a>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-700 dark:text-slate-300 pt-2 border-t border-indigo-100 dark:border-indigo-900/60">
+              <div>
+                <strong className="text-slate-900 dark:text-white">Nome / Imobiliária:</strong> {property.nomeCorretor || 'Não informado'}
+              </div>
+              <div>
+                <strong className="text-slate-900 dark:text-white">Telefone:</strong> {property.telefoneCorretor || 'Não informado'}
+              </div>
+              {property.andar && (
+                <div>
+                  <strong className="text-slate-900 dark:text-white">Andar do Apto:</strong> 🏢 {property.andar}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="rounded-2xl border-2 border-rose-200/80 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/10 p-5 space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-rose-200 dark:border-rose-900/40">
             <div className="flex items-center gap-2">
