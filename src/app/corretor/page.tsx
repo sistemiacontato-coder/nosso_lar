@@ -194,13 +194,6 @@ export default function CorretorPortalPage() {
             </div>
           </div>
 
-          <a
-            href="/"
-            className="text-xs font-bold text-slate-600 hover:text-indigo-600 dark:text-slate-400 flex items-center gap-1"
-          >
-            <span>Ver Dashboard</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </a>
         </div>
       </header>
 
