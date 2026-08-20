@@ -182,62 +182,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     });
   };
 
-  // Live Model Fetcher and Key Connection Validator
+  // Live Model Fetcher and Key Connection Validator via Backend API Route
   const fetchModelsForKey = async (key: string, target: 'primary' | 'fallback', initialModelSelect?: string) => {
     if (!key.trim()) return;
 
     if (target === 'primary') setValidatingPrimary(true);
     else setValidatingFallback(true);
 
-    const detectedProvider = detectProvider(key);
-    const start = Date.now();
-
     try {
-      let models: { id: string; name: string }[] = [];
+      const res = await fetch('/api/validate-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key.trim() }),
+      });
 
-      if (detectedProvider === 'gemini') {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-        if (!res.ok) throw new Error('Chave inválida ou erro na API do Google.');
-        const data = await res.json();
-        if (data.models && Array.isArray(data.models)) {
-          models = data.models
-            .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
-            .map((m: any) => {
-              const cleanId = m.name.replace('models/', '');
-              return { id: cleanId, name: cleanId };
-            });
-        }
-      } else if (detectedProvider === 'openai') {
-        const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { Authorization: `Bearer ${key}` },
-        });
-        if (!res.ok) throw new Error('Chave inválida ou erro na API OpenAI.');
-        const data = await res.json();
-        if (data.data && Array.isArray(data.data)) {
-          models = data.data
-            .filter((m: any) => m.id.includes('gpt'))
-            .map((m: any) => ({ id: m.id, name: m.id }));
-        }
-      } else if (detectedProvider === 'groq') {
-        const res = await fetch('https://api.groq.com/openai/v1/models', {
-          headers: { Authorization: `Bearer ${key}` },
-        });
-        if (!res.ok) throw new Error('Chave inválida ou erro na API Groq.');
-        const data = await res.json();
-        if (data.data && Array.isArray(data.data)) {
-          models = data.data.map((m: any) => ({ id: m.id, name: m.id }));
-        }
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Chave API inválida ou sem acesso.');
       }
 
-      if (models.length === 0) {
-        models = [
-          { id: 'gemini-1.5-flash', name: 'gemini-1.5-flash' },
-          { id: 'llama-3.3-70b-versatile', name: 'llama-3.3-70b-versatile' },
-          { id: 'gpt-4o-mini', name: 'gpt-4o-mini' },
-        ];
-      }
+      const models: { id: string; name: string }[] = json.models || [];
+      const latency: number = json.latency || 200;
+      const detectedProvider: AIProvider = json.provider || detectProvider(key);
 
-      const latency = Date.now() - start;
       const statusObj = { ok: true, msg: `Conexão Validada (${latency}ms)` };
 
       if (target === 'primary') {
