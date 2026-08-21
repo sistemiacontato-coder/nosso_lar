@@ -427,6 +427,20 @@ export function useProperties() {
           })
         );
         setProperties(updatedList);
+
+        fetch('/api/sync-properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ properties: updatedList }),
+        }).catch(() => {});
+
+        if (isSupabaseConfigured && supabase) {
+          supabase.channel('nosso_lar_couple_live_channel').send({
+            type: 'broadcast',
+            event: 'properties_synced',
+            payload: updatedList,
+          }).catch(() => {});
+        }
       } finally {
         setIsRecalculatingCommute(false);
       }

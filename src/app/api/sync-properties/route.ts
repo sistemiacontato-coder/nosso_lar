@@ -10,7 +10,16 @@ const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supa
 
 // Memory fallback store if Supabase table is not yet created
 let memoryPropertyStore: any[] | null = null;
-let memoryAnchorsStore: any = null;
+let memoryAnchorsStore: any = {
+  saymonAddress1: "Rua Gabrielle D'Annunzio, 48, Campo Belo, São Paulo, SP",
+  saymonAddress2: '',
+  saymonTime: '08:00',
+  saymonDay: 'weekday',
+  kellyAddress1: 'Prédio Prata - Bradesco (Cidade de Deus), Osasco - SP',
+  kellyAddress2: '',
+  kellyTime: '08:00',
+  kellyDay: 'weekday',
+};
 
 export async function GET() {
   try {

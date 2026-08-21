@@ -60,7 +60,7 @@ export function Dialog({ open, onOpenChange, children, maxWidth = 'lg' }: Dialog
       {/* Content */}
       <div
         className={cn(
-          'relative w-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xl z-10 transition-all max-h-[85vh] overflow-hidden',
+          'relative w-full flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-2xl z-10 transition-all max-h-[88vh] overflow-y-auto custom-scrollbar',
           maxWidths[maxWidth]
         )}
       >

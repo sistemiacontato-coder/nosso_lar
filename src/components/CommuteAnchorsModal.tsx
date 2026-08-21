@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Save, Compass, Loader2, Heart, Check, Clock } from 'lucide-react';
+import { MapPin, Save, Loader2, Clock } from 'lucide-react';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -11,11 +11,11 @@ import { CommuteAnchors } from '@/types/property';
 export const COMMUTE_ANCHORS_KEY = 'nosso_lar_commute_anchors_v3';
 
 export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
-  saymonAddress1: '',
+  saymonAddress1: "Rua Gabrielle D'Annunzio, 48, Campo Belo, São Paulo, SP",
   saymonAddress2: '',
   saymonTime: '08:00',
   saymonDay: 'weekday',
-  kellyAddress1: '',
+  kellyAddress1: 'Prédio Prata - Bradesco (Cidade de Deus), Osasco - SP',
   kellyAddress2: '',
   kellyTime: '08:00',
   kellyDay: 'weekday',
@@ -28,11 +28,11 @@ export function getStoredCommuteAnchors(): CommuteAnchors {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        saymonAddress1: parsed.saymonAddress1 || '',
+        saymonAddress1: parsed.saymonAddress1 || DEFAULT_COMMUTE_ANCHORS.saymonAddress1,
         saymonAddress2: parsed.saymonAddress2 || '',
         saymonTime: parsed.saymonTime || '08:00',
         saymonDay: parsed.saymonDay || 'weekday',
-        kellyAddress1: parsed.kellyAddress1 || '',
+        kellyAddress1: parsed.kellyAddress1 || DEFAULT_COMMUTE_ANCHORS.kellyAddress1,
         kellyAddress2: parsed.kellyAddress2 || '',
         kellyTime: parsed.kellyTime || '08:00',
         kellyDay: parsed.kellyDay || 'weekday',
@@ -64,7 +64,7 @@ interface CommuteAnchorsModalProps {
 export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = 'both' }: CommuteAnchorsModalProps) {
   const [anchors, setAnchors] = useState<CommuteAnchors>(DEFAULT_COMMUTE_ANCHORS);
 
-  // Suggestions state (1 for Saymon, 1 for Kelly)
+  // Suggestions state
   const [saymonSuggestions, setSaymonSuggestions] = useState<AddressSuggestion[]>([]);
   const [kellySuggestions, setKellySuggestions] = useState<AddressSuggestion[]>([]);
 
@@ -82,7 +82,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
     }
   }, [open]);
 
-  // Autocomplete fetch helper (Google Maps / OpenStreetMap Nominatim API)
+  // Autocomplete fetch helper
   const fetchAddressSuggestions = async (
     query: string,
     setSuggestions: (items: AddressSuggestion[]) => void,
@@ -141,15 +141,15 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <div className="p-6 max-w-xl w-full mx-auto space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange} maxWidth="4xl">
+      <div className="space-y-4">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 font-bold">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 text-white font-bold shrink-0 shadow-md">
               📍
             </div>
             <div>
-              <DialogTitle className="text-base font-extrabold text-slate-900 dark:text-white">
+              <DialogTitle className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
                 Endereços de Interesse (Perfil Saymon & Kelly)
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
@@ -159,13 +159,14 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
-          {/* SAYMON ADDRESS (1 CAMPO) */}
+        {/* HORIZONTAL 2-COLUMN GRID (SAYMON LEFT, KELLY RIGHT) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-1">
+          {/* SAYMON ADDRESS (LEFT COL) */}
           {(targetUser === 'both' || targetUser === 'saymon') && (
-            <div className="p-4 rounded-3xl bg-gradient-to-b from-indigo-50/80 to-purple-50/40 dark:from-indigo-950/40 dark:to-purple-950/20 border border-indigo-200/80 dark:border-indigo-800/80 space-y-3">
+            <div className="p-4 rounded-3xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/80 space-y-3 shadow-xs">
               <div className="flex items-center justify-between border-b border-indigo-100 dark:border-indigo-900/60 pb-2">
                 <span className="text-xs font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-2">
-                  <span className="text-lg">🧔</span> Endereço do Saymon
+                  <span className="text-base">🧔</span> Endereço do Saymon
                 </span>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
                   Saymon
@@ -180,7 +181,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                   <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-indigo-500" />
                   <Input
                     id="saymonAddress1"
-                    placeholder="Digite o endereço (ex: Miguel Rachid, 205, Osasco)..."
+                    placeholder="Digite o endereço (ex: Prédio Prata / Cidade de Deus)..."
                     value={anchors.saymonAddress1}
                     autoComplete="off"
                     onFocus={(e) => fetchAddressSuggestions(e.target.value, setSaymonSuggestions, setLoadingSaymon)}
@@ -198,13 +199,13 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
 
                 {/* Autocomplete suggestions box */}
                 {saymonSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-2xl py-1 text-xs">
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-44 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-2xl py-1 text-xs">
                     {saymonSuggestions.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectSuggestion('saymonAddress1', item, setSaymonSuggestions)}
-                        className="w-full text-left px-3.5 py-2.5 hover:bg-indigo-50 dark:hover:bg-indigo-950 flex items-start gap-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                        className="w-full text-left px-3.5 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950 flex items-start gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
                       >
                         <MapPin className="h-4 w-4 text-indigo-500 shrink-0 mt-0.5" />
                         <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800 dark:text-slate-100 leading-normal">
@@ -219,7 +220,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                 <div className="pt-1 flex items-center justify-between gap-2">
                   <Label htmlFor="saymonTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                    Saída & Dia Habitual:
+                    Saída & Dia:
                   </Label>
                   <div className="flex items-center gap-1.5">
                     <select
@@ -228,8 +229,8 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                       onChange={(e) => setAnchors((prev) => ({ ...prev, saymonDay: e.target.value }))}
                       className="text-xs font-bold px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 cursor-pointer shadow-xs"
                     >
-                      <option value="weekday">📅 Dia Útil (Seg–Sex)</option>
-                      <option value="weekend">🏖️ Fim de Semana (Sáb/Dom)</option>
+                      <option value="weekday">📅 Dia Útil</option>
+                      <option value="weekend">🏖️ Fim de Semana</option>
                     </select>
                     <Input
                       id="saymonTime"
@@ -244,12 +245,12 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
             </div>
           )}
 
-          {/* KELLY ADDRESS (1 CAMPO) */}
+          {/* KELLY ADDRESS (RIGHT COL) */}
           {(targetUser === 'both' || targetUser === 'kelly') && (
-            <div className="p-4 rounded-3xl bg-gradient-to-b from-rose-50/80 to-pink-50/40 dark:from-rose-950/40 dark:to-pink-950/20 border border-rose-200/80 dark:border-rose-800/80 space-y-3">
+            <div className="p-4 rounded-3xl bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/80 space-y-3 shadow-xs">
               <div className="flex items-center justify-between border-b border-rose-100 dark:border-rose-900/60 pb-2">
                 <span className="text-xs font-black text-rose-950 dark:text-rose-200 flex items-center gap-2">
-                  <span className="text-lg">👩</span> Endereço da Kelly
+                  <span className="text-base">👩</span> Endereço da Kelly
                 </span>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300">
                   Kelly
@@ -282,13 +283,13 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
 
                 {/* Autocomplete suggestions box */}
                 {kellySuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl py-1 text-xs">
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-44 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl py-1 text-xs">
                     {kellySuggestions.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectSuggestion('kellyAddress1', item, setKellySuggestions)}
-                        className="w-full text-left px-3.5 py-2.5 hover:bg-rose-50 dark:hover:bg-rose-950 flex items-start gap-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                        className="w-full text-left px-3.5 py-2 hover:bg-rose-50 dark:hover:bg-rose-950 flex items-start gap-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
                       >
                         <MapPin className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                         <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800 dark:text-slate-100 leading-normal">
@@ -303,7 +304,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                 <div className="pt-1 flex items-center justify-between gap-2">
                   <Label htmlFor="kellyTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-rose-500" />
-                    Saída & Dia Habitual:
+                    Saída & Dia:
                   </Label>
                   <div className="flex items-center gap-1.5">
                     <select
@@ -312,8 +313,8 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                       onChange={(e) => setAnchors((prev) => ({ ...prev, kellyDay: e.target.value }))}
                       className="text-xs font-bold px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 cursor-pointer shadow-xs"
                     >
-                      <option value="weekday">📅 Dia Útil (Seg–Sex)</option>
-                      <option value="weekend">🏖️ Fim de Semana (Sáb/Dom)</option>
+                      <option value="weekday">📅 Dia Útil</option>
+                      <option value="weekend">🏖️ Fim de Semana</option>
                     </select>
                     <Input
                       id="kellyTime"
@@ -342,7 +343,7 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md"
+            className="rounded-xl bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-700 hover:to-rose-700 text-white text-xs font-bold shadow-md px-5"
           >
             {isSaving ? (
               <>
