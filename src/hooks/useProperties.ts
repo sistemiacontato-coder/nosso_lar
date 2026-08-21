@@ -392,13 +392,16 @@ export function useProperties() {
   const [isRecalculatingCommute, setIsRecalculatingCommute] = useState(false);
 
   const recalculateCommuteTimes = useCallback(
-    async (anchors: CommuteAnchors) => {
+    (anchors: CommuteAnchors) => {
       setIsRecalculatingCommute(true);
-      try {
-        const updatedList = await Promise.all(
-          properties.map(async (p) => {
+      setProperties((currentProps) => {
+        Promise.all(
+          currentProps.map(async (p) => {
             try {
-              const googleApiKey = typeof window !== 'undefined' ? localStorage.getItem('nosso_lar_google_maps_key') || undefined : undefined;
+              const googleApiKey =
+                typeof window !== 'undefined'
+                  ? localStorage.getItem('nosso_lar_google_maps_key') || undefined
+                  : undefined;
               const res = await fetch('/api/calculate-commute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -425,27 +428,31 @@ export function useProperties() {
             } catch (e) {}
             return p;
           })
-        );
-        setProperties(updatedList);
+        ).then((updatedList) => {
+          setProperties(updatedList);
 
-        fetch('/api/sync-properties', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ properties: updatedList }),
-        }).catch(() => {});
-
-        if (isSupabaseConfigured && supabase) {
-          supabase.channel('nosso_lar_couple_live_channel').send({
-            type: 'broadcast',
-            event: 'properties_synced',
-            payload: updatedList,
+          fetch('/api/sync-properties', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ properties: updatedList }),
           }).catch(() => {});
-        }
-      } finally {
-        setIsRecalculatingCommute(false);
-      }
+
+          if (isSupabaseConfigured && supabase) {
+            supabase.channel('nosso_lar_couple_live_channel').send({
+              type: 'broadcast',
+              event: 'properties_synced',
+              payload: updatedList,
+            }).catch(() => {});
+          }
+          setIsRecalculatingCommute(false);
+        }).catch(() => {
+          setIsRecalculatingCommute(false);
+        });
+
+        return currentProps;
+      });
     },
-    [properties, setProperties]
+    [setProperties]
   );
 
   const [isReExtractingFinancials, setIsReExtractingFinancials] = useState(false);
