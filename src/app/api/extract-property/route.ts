@@ -367,16 +367,22 @@ export async function POST(req: NextRequest) {
     let vagas = 2;
     let area = 0;
 
-    const quartoMatch = html.match(/(\d+)\s*(?:quartos?|dormit[óo]rios?)/i);
+    const textForRooms = (title + ' ' + description).toLowerCase();
+
+    const quartoMatch = textForRooms.match(/(\d+)\s*(?:quartos?|dormit[óo]rios?)/i) ||
+                        html.match(/(\d+)\s*(?:quartos?|dormit[óo]rios?)/i);
     if (quartoMatch) quartos = parseInt(quartoMatch[1], 10);
 
-    const suiteMatch = html.match(/(\d+)\s*su[íi]tes?/i);
+    const suiteMatch = textForRooms.match(/(?:sendo\s*)?(\d+)\s*su[íi]tes?/i) ||
+                       html.match(/(?:sendo\s*)?(\d+)\s*su[íi]tes?/i);
     if (suiteMatch) suites = parseInt(suiteMatch[1], 10);
 
-    const banhoMatch = html.match(/(\d+)\s*banheiros?/i);
+    const banhoMatch = textForRooms.match(/(\d+)\s*banheiros?/i) ||
+                       html.match(/(\d+)\s*banheiros?/i);
     if (banhoMatch) banheiros = parseInt(banhoMatch[1], 10);
 
-    const vagaMatch = html.match(/(\d+)\s*vagas?/i);
+    const vagaMatch = textForRooms.match(/(\d+)\s*vagas?/i) ||
+                      html.match(/(\d+)\s*vagas?/i);
     if (vagaMatch) vagas = parseInt(vagaMatch[1], 10);
 
     const areaMatch = html.match(/([\d\.,]+)\s*(?:m²|m2|metros)/i);
