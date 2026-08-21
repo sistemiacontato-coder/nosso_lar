@@ -57,13 +57,19 @@ export function formatDistance(km: number | undefined | null): string {
 }
 
 export function calculateTotals(
-  aluguel: number = 0,
-  condominio: number = 0,
-  iptu: number = 0,
-  area: number = 0,
-  seguroIncendio: number = 0
+  aluguel: number | string = 0,
+  condominio: number | string = 0,
+  iptu: number | string = 0,
+  area: number | string = 0,
+  seguroIncendio: number | string = 0
 ) {
-  const custoTotal = Number(aluguel || 0) + Number(condominio || 0) + Number(iptu || 0) + Number(seguroIncendio || 0);
-  const precoM2 = area > 0 ? custoTotal / area : 0;
+  const cSeguro = Number(String(seguroIncendio || 0).replace(',', '.')) || 0;
+  const cAluguel = Number(String(aluguel || 0).replace(',', '.')) || 0;
+  const cCondo = Number(String(condominio || 0).replace(',', '.')) || 0;
+  const cIptu = Number(String(iptu || 0).replace(',', '.')) || 0;
+  const cArea = Number(String(area || 0).replace(',', '.')) || 0;
+
+  const custoTotal = cAluguel + cCondo + cIptu + cSeguro;
+  const precoM2 = cArea > 0 ? custoTotal / cArea : 0;
   return { custoTotal, precoM2 };
 }
