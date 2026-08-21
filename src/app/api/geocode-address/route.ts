@@ -217,22 +217,6 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
       console.warn('Photon API error:', e);
     }
 
-            if (!seenIds.has(key)) {
-              seenIds.add(key);
-              suggestions.push({
-                id: key,
-                displayName: item.display_name,
-                shortTitle: fullLabel,
-                lat: parseFloat(item.lat),
-                lon: parseFloat(item.lon),
-              });
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Nominatim API error:', e);
-    }
 
     return NextResponse.json({ success: true, suggestions });
   } catch (error: any) {
