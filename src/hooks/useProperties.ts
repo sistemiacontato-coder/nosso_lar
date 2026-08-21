@@ -342,6 +342,14 @@ export function useProperties() {
             return p;
           })
         );
+        setProperties(updatedList);
+      } finally {
+        setIsRecalculatingCommute(false);
+      }
+    },
+    [properties, setProperties]
+  );
+
   const [isReExtractingFinancials, setIsReExtractingFinancials] = useState(false);
 
   const reExtractAllPropertiesFinancials = useCallback(async () => {
