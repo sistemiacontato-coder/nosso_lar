@@ -109,9 +109,15 @@ function fallbackExtractFromUrlSlug(urlStr: string): any {
   const urlLower = urlStr.toLowerCase();
   
   let valorAluguel = 0;
-  const rentMatch = urlLower.match(/aluguel-rs?(\d+)/i) || urlLower.match(/rs-?(\d+)/i) || urlLower.match(/aluguel-?(\d+)/i);
+  // Match aluguel-rs4800 or rs-4800 or aluguel-4800, strictly excluding ID numbers (id-2900...)
+  const rentMatch = urlLower.match(/aluguel-rs?(\d{3,5})(?:-|$|\/)/i) ||
+                    urlLower.match(/rs-?(\d{3,5})(?:-|$|\/)/i) ||
+                    urlLower.match(/aluguel-?(\d{3,5})(?:-|$|\/)/i);
   if (rentMatch) {
-    valorAluguel = parseInt(rentMatch[1], 10);
+    const val = parseInt(rentMatch[1], 10);
+    if (val >= 500 && val <= 50000) {
+      valorAluguel = val;
+    }
   }
 
   let dormitorios = 3;
@@ -147,9 +153,9 @@ function fallbackExtractFromUrlSlug(urlStr: string): any {
 
   return {
     titulo,
-    valorAluguel: valorAluguel || 4800,
-    valorCondominio: Math.round((valorAluguel || 4800) * 0.15),
-    valorIptu: Math.round((valorAluguel || 4800) * 0.04),
+    valorAluguel: valorAluguel, // Real parsed price or 0 (no fake defaults)
+    valorCondominio: 0,         // 0 if unknown
+    valorIptu: 0,               // 0 if unknown
     dormitorios,
     suites: dormitorios > 2 ? 1 : 0,
     banheiros: 2,
@@ -157,7 +163,7 @@ function fallbackExtractFromUrlSlug(urlStr: string): any {
     areaUtil,
     bairro,
     urlImagem: 'https://imgs.kenlo.io/VWRCUkQ2Tnp3d1BJRDBJVe1szkhnWr9UfpZS9ftWwjXgr7v5Znen3XVcMHllDVRJJeIbi3YwVYEtu2JbwsxMo08BqtsDUISG7SC6wYm9oufJhx6X16nYlp3jzcXtYuzAxMU0lICrAniXrZZVQ-gXbGJpYutAazy3R8KRGXtS-BeQ-X7iUaRiE3Jb4zEMgUl0+2f8fqWT7nIM-Qr1BOL1uAeIRb7hP0FTQPlLANk18QdW9hinR0InpwcS45urs3PTcKG1MI36iGwAF0wy6oK5APevm5PPedV-GacxP3wP61NeW6wcmvuVAupw6QEZovrFTQeShQjQiOM3eYWuWN1JlbwAlAvAH7UfuRvtwtKU0qP5akmDZlc0obzO8PvlPP7xTbSkZ26pkpg85ZjVEMhUN46nSDQVFyQvcXdBsl7ktPyL7AD5bSnYrhAWHxPRzsM49G5-clU=.jpg',
-    duvidasCorretor: '1. O valor do condomínio inclui água/gás?\n2. A vaga de garagem é livre e coberta?\n3. Aceita seguro fiança?',
+    duvidasCorretor: '1. Qual o valor exato do condomínio e IPTU?\n2. O valor do condomínio inclui água ou gás?\n3. A vaga de garagem é livre e coberta?',
   };
 }
 
@@ -283,7 +289,7 @@ export async function POST(req: NextRequest) {
       bairro = 'Osasco / Zona Oeste';
     }
 
-    // 4. Extrair Valores Financeiros
+    // 4. Extrair Valores Financeiros Precisos
     let aluguel = 0;
     let condominio = 0;
     let iptu = 0;
@@ -294,14 +300,64 @@ export async function POST(req: NextRequest) {
       return parseFloat(clean) || 0;
     };
 
-    const priceMatch = html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel)/i);
-    if (priceMatch) aluguel = parseMoney(priceMatch[1]);
+    // Try JSON-LD / JSON state first for 100% accuracy
+    const jsonMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    if (jsonMatches) {
+      for (const scriptTag of jsonMatches) {
+        if (scriptTag.includes('price') || scriptTag.includes('pricingInfo') || scriptTag.includes('valor')) {
+          try {
+            const cleanContent = scriptTag.replace(/<script[^>]*>/i, '').replace(/<\/script>/i, '').trim();
+            if (cleanContent.startsWith('{') || cleanContent.startsWith('[')) {
+              const parsed = JSON.parse(cleanContent);
+              const strJson = JSON.stringify(parsed);
 
-    const condoMatch = html.match(/condom[íi]nio.*?:?\s*R\$\s*([\d\.,]+)/i);
-    if (condoMatch) condominio = parseMoney(condoMatch[1]);
+              const jsonPriceMatch = strJson.match(/"rentalPrice"\s*:\s*"?(\d+)"?/) ||
+                                    strJson.match(/"price"\s*:\s*"?(\d+)"?/) ||
+                                    strJson.match(/"valorAluguel"\s*:\s*"?(\d+)"?/);
+              if (jsonPriceMatch && !aluguel) {
+                const val = parseInt(jsonPriceMatch[1], 10);
+                if (val >= 500 && val <= 50000) aluguel = val;
+              }
 
-    const iptuMatch = html.match(/iptu.*?:?\s*R\$\s*([\d\.,]+)/i);
-    if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
+              const jsonCondoMatch = strJson.match(/"monthlyCondoFee"\s*:\s*"?(\d+)"?/) ||
+                                     strJson.match(/"valorCondominio"\s*:\s*"?(\d+)"?/);
+              if (jsonCondoMatch && !condominio) {
+                condominio = parseInt(jsonCondoMatch[1], 10);
+              }
+
+              const jsonIptuMatch = strJson.match(/"yearlyIptu"\s*:\s*"?(\d+)"?/);
+              if (jsonIptuMatch && !iptu) {
+                iptu = Math.round(parseInt(jsonIptuMatch[1], 10) / 12);
+              } else {
+                const monthlyIptuMatch = strJson.match(/"monthlyIptu"\s*:\s*"?(\d+)"?/) ||
+                                         strJson.match(/"valorIptu"\s*:\s*"?(\d+)"?/);
+                if (monthlyIptuMatch && !iptu) {
+                  iptu = parseInt(monthlyIptuMatch[1], 10);
+                }
+              }
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    if (!aluguel) {
+      const priceMatch = html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel|\s*locaçã|locacao)/i) ||
+                         html.match(/aluguel.*?:?\s*R\$\s*([\d\.,]+)/i) ||
+                         html.match(/valor.*?:?\s*R\$\s*([\d\.,]+)/i);
+      if (priceMatch) aluguel = parseMoney(priceMatch[1]);
+    }
+
+    if (!condominio) {
+      const condoMatch = html.match(/condom[íi]nio.*?:?\s*R\$\s*([\d\.,]+)/i) ||
+                         html.match(/cond\..*?:?\s*R\$\s*([\d\.,]+)/i);
+      if (condoMatch) condominio = parseMoney(condoMatch[1]);
+    }
+
+    if (!iptu) {
+      const iptuMatch = html.match(/iptu.*?:?\s*R\$\s*([\d\.,]+)/i);
+      if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
+    }
 
     // 5. Extrair Cômodos
     let quartos = 3;
@@ -413,25 +469,28 @@ export async function POST(req: NextRequest) {
       finalTitle = finalTitle.slice(0, 30).trimEnd();
     }
 
+    const finalData = {
+      titulo: finalTitle,
+      urlImagem: imageUrl || '',
+      bairro: decodeHtmlEntities(bairro || 'Osasco / Zona Oeste'),
+      valorAluguel: aluguel,       // Real value or 0 (no fake defaults)
+      valorCondominio: condominio, // Real value or 0
+      valorIptu: iptu,             // Real value or 0
+      dormitorios: quartos,
+      suites: suites,
+      banheiros: banheiros,
+      vagasGaragem: vagas,
+      areaUtil: area,
+      diferenciais: detectedDiferenciais,
+      observacoes: decodeHtmlEntities(description.slice(0, 300)),
+      duvidasCorretor: decodeHtmlEntities(duvidasCorretor),
+    };
+
     return NextResponse.json({
       success: true,
       readerUsed: aiResult ? readerUsed : 'regex',
-      data: {
-        titulo: finalTitle,
-        urlImagem: imageUrl || '',
-        bairro: decodeHtmlEntities(bairro || 'Osasco / Zona Oeste'),
-        valorAluguel: aluguel || 3800,
-        valorCondominio: condominio || 800,
-        valorIptu: iptu || 200,
-        dormitorios: quartos,
-        suites: suites,
-        banheiros: banheiros,
-        vagasGaragem: vagas,
-        areaUtil: area,
-        diferenciais: detectedDiferenciais,
-        observacoes: decodeHtmlEntities(description.slice(0, 300)),
-        duvidasCorretor: decodeHtmlEntities(duvidasCorretor),
-      },
+      data: finalData,
+      extracted: finalData,
     });
   } catch (error: any) {
     console.error('Erro na extração do imóvel:', error);
