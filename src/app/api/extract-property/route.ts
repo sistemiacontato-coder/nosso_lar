@@ -430,8 +430,16 @@ export async function POST(req: NextRequest) {
 
     let duvidasCorretor = `1. A vaga de garagem é livre ou presa?\n2. O valor do condomínio inclui água ou gás individualizado?\n3. Qual a garantia de locação aceita (caução, seguro fiança ou fiador)?`;
 
+    // Clean body text without CSS/script tags for AI and regex parsing
+    const cleanBodyText = html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     // 🤖 MULTI-PROVIDER AI EXTRACTION WITH REDUNDANCY / FALLBACK LOGIC
-    const textSample = (title + '\n' + description + '\n' + html.slice(0, 4000)).slice(0, 3000);
+    const textSample = (title + '\n' + description + '\n' + cleanBodyText).slice(0, 4000);
 
     const primaryCfg: AIServiceConfig = primary || {
       provider: clientProvider,
