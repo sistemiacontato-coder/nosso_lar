@@ -116,7 +116,36 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
   const [fallbackModels, setFallbackModels] = useState<{ id: string; name: string }[]>([]);
   const [fallbackStatus, setFallbackStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  const [validatingGoogle, setValidatingGoogle] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  const handleTestGoogleMapsKey = async () => {
+    if (!googleMapsKey.trim()) {
+      setGoogleStatus({ ok: false, msg: 'Informe a chave do Google Maps antes de testar.' });
+      return;
+    }
+    setValidatingGoogle(true);
+    setGoogleStatus(null);
+    try {
+      const res = await fetch('/api/validate-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: googleMapsKey.trim(), type: 'google_maps' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGoogleStatus({ ok: true, msg: 'Chave do Google Maps validada e autorizada com sucesso! 🟢' });
+      } else {
+        setGoogleStatus({ ok: false, msg: data.error || 'Chave recusada pelo Google Maps.' });
+      }
+    } catch (e: any) {
+      setGoogleStatus({ ok: false, msg: 'Erro ao conectar ao servidor do Google Maps.' });
+    } finally {
+      setValidatingGoogle(false);
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -333,21 +362,48 @@ export function SettingsModal({ open, onOpenChange, onClearRatings }: SettingsMo
               Insira sua chave para utilizar a <strong>Distance Matrix & Geocoding API oficial do Google</strong> com trânsito em tempo real!
             </p>
             <div className="flex flex-col gap-2">
-              <Input
-                type="password"
-                placeholder="Cole sua API Key do Google Maps (ex: AIzaSy...)..."
-                value={googleMapsKey}
-                onChange={(e) => {
-                  const val = e.target.value.trim();
-                  setGoogleMapsKey(val);
-                  localStorage.setItem('nosso_lar_google_maps_key', val);
-                }}
-                className="text-xs bg-white dark:bg-slate-900"
-              />
-              {googleMapsKey && googleMapsKey.length > 15 && (
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span>API do Google Maps Ativada e Pronta! 🟢</span>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Cole sua API Key do Google Maps (ex: AIzaSy...)..."
+                  value={googleMapsKey}
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    setGoogleMapsKey(val);
+                    setGoogleStatus(null);
+                    localStorage.setItem('nosso_lar_google_maps_key', val);
+                  }}
+                  className="text-xs bg-white dark:bg-slate-900 flex-1"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleTestGoogleMapsKey}
+                  disabled={validatingGoogle || !googleMapsKey.trim()}
+                  className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1 rounded-xl shadow-xs"
+                >
+                  {validatingGoogle ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    'Testar API'
+                  )}
+                </Button>
+              </div>
+
+              {googleStatus && (
+                <div
+                  className={`flex items-start gap-2 text-[11px] font-bold p-2.5 rounded-xl border leading-relaxed ${
+                    googleStatus.ok
+                      ? 'text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
+                      : 'text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800'
+                  }`}
+                >
+                  {googleStatus.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <span>{googleStatus.msg}</span>
                 </div>
               )}
             </div>

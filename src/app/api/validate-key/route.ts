@@ -2,14 +2,32 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { apiKey } = await req.json();
-    const cleanKey = (apiKey || '').trim();
+    const body = await req.json();
+    const cleanKey = (body.apiKey || '').trim();
+    const type = body.type || '';
 
     if (!cleanKey) {
       return NextResponse.json(
         { success: false, error: 'Chave API não informada.' },
         { status: 400 }
       );
+    }
+
+    // Google Maps API Validation Mode
+    if (type === 'google_maps') {
+      const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=Sao+Paulo&language=pt-BR&key=${cleanKey}`;
+      const gRes = await fetch(gUrl, { cache: 'no-store' });
+      const gJson = await gRes.json();
+      if (gJson.status === 'OK') {
+        return NextResponse.json({
+          success: true,
+          provider: 'google_maps',
+          providerName: 'Google Maps API 🗺️',
+          message: 'Chave do Google Maps validada e autorizada com sucesso!',
+        });
+      } else {
+        throw new Error(gJson.error_message || `Chave recusada pelo Google (${gJson.status}). Verifique as permissões e faturamento no Google Cloud.`);
+      }
     }
 
     // Auto-detect provider by prefix
