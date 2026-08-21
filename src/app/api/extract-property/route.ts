@@ -214,6 +214,7 @@ export async function POST(req: NextRequest) {
       const slugData = fallbackExtractFromUrlSlug(url);
       return NextResponse.json({
         success: true,
+        data: slugData,
         extracted: slugData,
         source: 'url_slug_fallback',
       });

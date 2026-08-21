@@ -193,7 +193,7 @@ export function PropertyFormModal({
         throw new Error(json.error || 'Falha ao extrair dados do anúncio.');
       }
 
-      const data = json.data;
+      const data = json.data || json.extracted || {};
       setValue('urlAnuncio', targetUrl.trim(), { shouldValidate: true });
       if (data.titulo) setValue('titulo', data.titulo, { shouldValidate: true });
       if (data.urlImagem) setValue('urlImagem', data.urlImagem, { shouldValidate: true });
