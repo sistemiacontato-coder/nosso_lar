@@ -9,7 +9,7 @@ import { PropertyFormValues } from '@/lib/schemas';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v8';
+const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v9';
 
 export function useProperties() {
   const [properties, setProperties, isLoaded] = useLocalStorage<Property[]>(
@@ -342,10 +342,100 @@ export function useProperties() {
             return p;
           })
         );
-        setProperties(updatedList);
-      } finally {
-        setIsRecalculatingCommute(false);
-      }
+  const [isReExtractingFinancials, setIsReExtractingFinancials] = useState(false);
+
+  const reExtractAllPropertiesFinancials = useCallback(async () => {
+    setIsReExtractingFinancials(true);
+    try {
+      const updatedList = await Promise.all(
+        properties.map(async (p) => {
+          if (!p.urlAnuncio || !p.urlAnuncio.trim()) return p;
+          try {
+            const res = await fetch('/api/extract-property', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: p.urlAnuncio.trim() }),
+            });
+            const json = await res.json();
+            const data = json.data || json.extracted;
+            if (json.success && data) {
+              const novoAluguel = data.valorAluguel || p.valorAluguel;
+              const novoCondo = data.valorCondominio !== undefined ? data.valorCondominio : p.valorCondominio;
+              const novoIptu = data.valorIptu !== undefined ? data.valorIptu : p.valorIptu;
+              const { custoTotal, precoM2 } = calculateTotals(
+                novoAluguel,
+                novoCondo,
+                novoIptu,
+                p.areaUtil || data.areaUtil || 50
+              );
+              return {
+                ...p,
+                titulo: data.titulo || p.titulo,
+                urlImagem: data.urlImagem || p.urlImagem,
+                bairro: data.bairro || p.bairro,
+                valorAluguel: novoAluguel,
+                valorCondominio: novoCondo,
+                valorIptu: novoIptu,
+                custoTotalMensal: custoTotal,
+                precoMetroQuadrado: precoM2,
+                dormitorios: data.dormitorios || p.dormitorios,
+                vagasGaragem: data.vagasGaragem !== undefined ? data.vagasGaragem : p.vagasGaragem,
+                areaUtil: data.areaUtil || p.areaUtil,
+              };
+            }
+          } catch (e) {}
+          return p;
+        })
+      );
+      setProperties(updatedList);
+    } finally {
+      setIsReExtractingFinancials(false);
+    }
+  }, [properties, setProperties]);
+
+  const reExtractSinglePropertyFinancials = useCallback(
+    async (id: string) => {
+      const target = properties.find((p) => p.id === id);
+      if (!target || !target.urlAnuncio) return;
+      try {
+        const res = await fetch('/api/extract-property', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: target.urlAnuncio.trim() }),
+        });
+        const json = await res.json();
+        const data = json.data || json.extracted;
+        if (json.success && data) {
+          setProperties((prev) =>
+            prev.map((p) => {
+              if (p.id !== id) return p;
+              const novoAluguel = data.valorAluguel || p.valorAluguel;
+              const novoCondo = data.valorCondominio !== undefined ? data.valorCondominio : p.valorCondominio;
+              const novoIptu = data.valorIptu !== undefined ? data.valorIptu : p.valorIptu;
+              const { custoTotal, precoM2 } = calculateTotals(
+                novoAluguel,
+                novoCondo,
+                novoIptu,
+                p.areaUtil || data.areaUtil || 50
+              );
+              return {
+                ...p,
+                titulo: data.titulo || p.titulo,
+                urlImagem: data.urlImagem || p.urlImagem,
+                bairro: data.bairro || p.bairro,
+                valorAluguel: novoAluguel,
+                valorCondominio: novoCondo,
+                valorIptu: novoIptu,
+                custoTotalMensal: custoTotal,
+                precoMetroQuadrado: precoM2,
+                dormitorios: data.dormitorios || p.dormitorios,
+                vagasGaragem: data.vagasGaragem !== undefined ? data.vagasGaragem : p.vagasGaragem,
+                areaUtil: data.areaUtil || p.areaUtil,
+              };
+            })
+          );
+        }
+      } catch (e) {}
     },
     [properties, setProperties]
   );
