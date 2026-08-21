@@ -162,37 +162,44 @@ function getTrafficFactor(departureTime?: string, dayType?: string): number {
   const min = parseInt(minStr || '0', 10);
   const timeInDecimal = hour + min / 60;
 
-  // Weekend (Sábado / Domingo)
+  // Weekend (Sábado / Domingo): Always smooth roads!
   if (dayType === 'weekend') {
-    // Night / Midnight (22:00 - 06:00) -> Very Fast / No Traffic (0.75x)
-    if (timeInDecimal >= 22.0 || timeInDecimal <= 6.0) {
-      return 0.75;
+    // Night (21:00 - 06:30) -> Empty roads (0.70x)
+    if (timeInDecimal >= 21.0 || timeInDecimal < 6.5) {
+      return 0.70;
     }
-    // Daytime Weekend -> Smooth (0.90x)
-    return 0.90;
+    // Weekend Daytime (06:30 - 21:00) -> Smooth traffic (0.80x)
+    return 0.80;
   }
 
-  // Weekday (Segunda a Sexta)
-  // Night / Midnight (22:00 - 06:00) -> Very Fast / No Traffic (0.75x)
-  if (timeInDecimal >= 22.0 || timeInDecimal <= 6.0) {
-    return 0.75;
+  // Weekday (Segunda a Sexta): Real peak & off-peak rush hour traffic curves!
+  // Night / Midnight (21:30 - 06:00) -> Empty roads (0.70x)
+  if (timeInDecimal >= 21.5 || timeInDecimal < 6.0) {
+    return 0.70;
   }
 
-  // Morning Peak (07:00 - 09:30) -> Extreme Rush Hour Traffic (1.65x)
-  if (timeInDecimal >= 7.0 && timeInDecimal <= 9.5) {
+  // Early Morning Rush Building (06:00 - 07:15) -> Building Traffic (1.35x)
+  if (timeInDecimal >= 6.0 && timeInDecimal < 7.25) {
+    return 1.35;
+  }
+
+  // Full Peak Morning Rush (07:15 - 09:30) -> Heavy Rush Hour Traffic (1.65x)
+  if (timeInDecimal >= 7.25 && timeInDecimal <= 9.5) {
     return 1.65;
   }
-  // Evening Peak (17:00 - 19:30) -> Extreme Rush Hour Traffic (1.70x)
-  if (timeInDecimal >= 17.0 && timeInDecimal <= 19.5) {
-    return 1.70;
-  }
-  // Off-Peak Daytime (10:00 - 16:00) -> Moderate (1.15x)
-  if (timeInDecimal >= 10.0 && timeInDecimal <= 16.0) {
-    return 1.15;
+
+  // Off-Peak Daytime (09:30 - 16:30) -> Moderate Traffic (1.10x)
+  if (timeInDecimal > 9.5 && timeInDecimal < 16.5) {
+    return 1.10;
   }
 
-  // Shoulder hours (06:00 - 07:00, 09:30 - 10:00, 16:00 - 17:00, 19:30 - 22:00) -> Moderate-High (1.30x)
-  return 1.30;
+  // Evening Peak Rush (16:30 - 19:45) -> Heavy Evening Traffic (1.70x)
+  if (timeInDecimal >= 16.5 && timeInDecimal <= 19.75) {
+    return 1.70;
+  }
+
+  // Night Clearing (19:75 - 21:30) -> Light-Moderate (1.05x)
+  return 1.05;
 }
 
 // Estimate transit/driving time in minutes for Greater SP area based on distance and departure time
