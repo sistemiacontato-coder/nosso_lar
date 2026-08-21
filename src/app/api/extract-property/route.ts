@@ -342,29 +342,30 @@ export async function POST(req: NextRequest) {
     }
 
     if (!aluguel) {
-      const priceMatch = html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel|\s*locaçã|locacao)/i) ||
-                         html.match(/aluguel.*?:?\s*R\$\s*([\d\.,]+)/i) ||
+      const priceMatch = html.match(/class=["'](?:preco-imovel|preco-imovel-mobile|preco)["'][^>]*>\s*R\$\s*([\d\.,]+)/i) ||
+                         html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel|\s*locaçã|locacao)/i) ||
+                         html.match(/aluguel[\s\S]{0,100}?R\$\s*([\d\.,]+)/i) ||
                          html.match(/valor.*?:?\s*R\$\s*([\d\.,]+)/i);
       if (priceMatch) aluguel = parseMoney(priceMatch[1]);
     }
 
     if (!condominio) {
-      const condoMatch = html.match(/condom[íi]nio.*?:?\s*R\$\s*([\d\.,]+)/i) ||
+      const condoMatch = html.match(/condom[íi]nio[\s\S]{0,150}?R\$\s*([\d\.,]+)/i) ||
                          html.match(/cond\..*?:?\s*R\$\s*([\d\.,]+)/i);
       if (condoMatch) condominio = parseMoney(condoMatch[1]);
     }
 
     if (!iptu) {
-      const iptuMatch = html.match(/iptu.*?:?\s*R\$\s*([\d\.,]+)/i);
+      const iptuMatch = html.match(/iptu[\s\S]{0,150}?R\$\s*([\d\.,]+)/i);
       if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
     }
 
-    // 5. Extrair Cômodos
+    // 5. Extrair Cômodos & Área Útil
     let quartos = 3;
     let suites = 1;
     let banheiros = 2;
     let vagas = 2;
-    let area = 80;
+    let area = 0;
 
     const quartoMatch = html.match(/(\d+)\s*(?:quartos?|dormit[óo]rios?)/i);
     if (quartoMatch) quartos = parseInt(quartoMatch[1], 10);
@@ -378,8 +379,8 @@ export async function POST(req: NextRequest) {
     const vagaMatch = html.match(/(\d+)\s*vagas?/i);
     if (vagaMatch) vagas = parseInt(vagaMatch[1], 10);
 
-    const areaMatch = html.match(/(\d+)\s*(?:m²|m2|metros)/i);
-    if (areaMatch) area = parseInt(areaMatch[1], 10);
+    const areaMatch = html.match(/([\d\.,]+)\s*(?:m²|m2|metros)/i);
+    if (areaMatch) area = parseMoney(areaMatch[1]);
 
     // 6. Detectar Diferenciais
     const detectedDiferenciais: string[] = [];
