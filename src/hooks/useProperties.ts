@@ -17,11 +17,37 @@ export function useProperties() {
     INITIAL_PROPERTIES
   );
 
-  // ─── Supabase Realtime: ouve sugestões dos corretores em tempo real ───
+  // ─── Supabase Realtime: Sincronia de alterções ao vivo entre Saymon e Kelly ───
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
-    const channel = supabase
+    // 1. Ouve alterações e votos ao vivo do casal (Saymon & Kelly)
+    const coupleChannel = supabase
+      .channel('nosso_lar_couple_live_channel')
+      .on('broadcast', { event: 'property_updated' }, (payload: any) => {
+        const updatedProp: Property = payload.payload;
+        if (!updatedProp?.id) return;
+        setProperties((prev) =>
+          prev.map((p) => (p.id === updatedProp.id ? { ...p, ...updatedProp } : p))
+        );
+      })
+      .on('broadcast', { event: 'property_added' }, (payload: any) => {
+        const newProp: Property = payload.payload;
+        if (!newProp?.id) return;
+        setProperties((prev) => {
+          if (prev.some((p) => p.id === newProp.id)) return prev;
+          return [newProp, ...prev];
+        });
+      })
+      .on('broadcast', { event: 'property_deleted' }, (payload: any) => {
+        const id = payload.payload?.id;
+        if (!id) return;
+        setProperties((prev) => prev.filter((p) => p.id !== id));
+      })
+      .subscribe();
+
+    // 2. Ouve sugestões dos corretores
+    const sugestoesChannel = supabase
       .channel('nosso_lar_sugestoes_realtime')
       .on(
         'postgres_changes',
@@ -49,12 +75,10 @@ export function useProperties() {
             distanciaMetroKm: 1.5,
             diferenciais: Array.isArray(row.diferenciais) ? row.diferenciais : [],
             status: 'Para Analisar' as const,
-            notaSaymon: 4,
-            vereditoSaymon: 'Gostei',
-            notaKelly: 4,
-            vereditoKelly: 'Gostei',
-            mediaCasal: 4,
-            notaPessoal: 4,
+            notaSaymon: 0,
+            notaKelly: 0,
+            mediaCasal: 0,
+            notaPessoal: 0,
             observacoes: row.observacoes || undefined,
             duvidasCorretor: row.duvidas_corretor || undefined,
             isSugestao: true,
@@ -64,7 +88,6 @@ export function useProperties() {
             isFavorito: false,
           };
 
-          // Só adiciona se ainda não existir no estado local
           setProperties((prev) => {
             if (prev.find((p) => p.id === row.id)) return prev;
             return [novasugestao, ...prev];
@@ -74,7 +97,8 @@ export function useProperties() {
       .subscribe();
 
     return () => {
-      supabase?.removeChannel(channel);
+      supabase?.removeChannel(coupleChannel);
+      supabase?.removeChannel(sugestoesChannel);
     };
   }, [setProperties]);
 
@@ -282,6 +306,8 @@ export function useProperties() {
 
   const quickUpdateProperty = useCallback(
     (id: string, updates: Partial<Property>) => {
+      let finalUpdated: Property | null = null;
+
       setProperties((prev) =>
         prev.map((item) => {
           if (item.id !== id) return item;
@@ -295,17 +321,29 @@ export function useProperties() {
             updated.valorSeguroIncendio
           );
 
-          const media = Number(((updated.notaSaymon + updated.notaKelly) / 2).toFixed(1));
+          const nSaymon = Number(updated.notaSaymon || 0);
+          const nKelly = Number(updated.notaKelly || 0);
+          const media = (nSaymon > 0 && nKelly > 0) ? Number(((nSaymon + nKelly) / 2).toFixed(1)) : (nSaymon || nKelly || 0);
 
-          return {
+          finalUpdated = {
             ...updated,
             custoTotalMensal: custoTotal,
             precoMetroQuadrado: precoM2,
             mediaCasal: media,
             notaPessoal: media,
           };
+
+          return finalUpdated;
         })
       );
+
+      if (isSupabaseConfigured && supabase && finalUpdated) {
+        supabase.channel('nosso_lar_couple_live_channel').send({
+          type: 'broadcast',
+          event: 'property_updated',
+          payload: finalUpdated,
+        }).catch(() => {});
+      }
     },
     [setProperties]
   );

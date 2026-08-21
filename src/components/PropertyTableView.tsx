@@ -538,6 +538,7 @@ export function PropertyTableView({
         onOpenChange={(open) => {
           if (!open) setCommentsModalProp(null);
         }}
+        onQuickUpdateProperty={onQuickUpdateProperty}
       />
     </div>
   );
