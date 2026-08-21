@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -21,6 +21,7 @@ import {
   MapPin,
   ArrowRight,
   ArrowLeft,
+  X,
 } from 'lucide-react';
 import { propertyFormSchema, PropertyFormValues } from '@/lib/schemas';
 import { Property, AVAILABLE_DIFFERENTIALS, getCoupleMatchBadge } from '@/types/property';
@@ -55,6 +56,7 @@ const emptyDefaultValues: PropertyFormValues = {
   banheiros: '' as unknown as number,
   vagasGaragem: '' as unknown as number,
   areaUtil: '' as unknown as number,
+  andar: '',
   tempoAteTrabalhoMinutos: '' as unknown as number,
   tempoSaymonMinutos: '' as unknown as number,
   tempoKellyMinutos: '' as unknown as number,
@@ -128,6 +130,7 @@ export function PropertyFormModal({
           banheiros: initialData.banheiros,
           vagasGaragem: initialData.vagasGaragem,
           areaUtil: initialData.areaUtil,
+          andar: initialData.andar || '',
           tempoAteTrabalhoMinutos: initialData.tempoAteTrabalhoMinutos || 25,
           tempoSaymonMinutos: initialData.tempoSaymonMinutos || 20,
           tempoKellyMinutos: initialData.tempoKellyMinutos || 30,
@@ -206,6 +209,7 @@ export function PropertyFormModal({
       if (data.banheiros) setValue('banheiros', data.banheiros, { shouldValidate: true });
       if (data.vagasGaragem) setValue('vagasGaragem', data.vagasGaragem, { shouldValidate: true });
       if (data.areaUtil) setValue('areaUtil', data.areaUtil, { shouldValidate: true });
+      if (data.andar) setValue('andar', data.andar, { shouldValidate: true });
       if (data.diferenciais && data.diferenciais.length > 0) {
         setValue('diferenciais', data.diferenciais, { shouldValidate: true });
       }
@@ -220,6 +224,18 @@ export function PropertyFormModal({
     }
   };
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setAddressSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleAutoExtract = () => handleAutoExtractWithUrl(extractUrl);
 
   // Address lookup helper
@@ -230,7 +246,9 @@ export function PropertyFormModal({
     }
     setIsSearchingAddress(true);
     try {
-      const res = await fetch(`/api/geocode-address?q=${encodeURIComponent(query)}`);
+      const bairroVal = watch('bairro') || '';
+      const fullQuery = bairroVal ? `${query}, ${bairroVal}` : query;
+      const res = await fetch(`/api/geocode-address?q=${encodeURIComponent(fullQuery)}`);
       const json = await res.json();
       if (json.success) {
         setAddressSuggestions(json.suggestions || []);
@@ -450,20 +468,18 @@ export function PropertyFormModal({
                     placeholder="Cole a URL do imóvel (ex: https://www.vivareal.com.br/imovel/...)"
                     value={extractUrl}
                     onChange={(e) => {
-                      const url = e.target.value;
+                      let url = e.target.value.trim();
+                      // Auto-fix if user pasted duplicate URL concatenated together (e.g. https://...https://...):
+                      const doubleMatch = url.match(/(https?:\/\/[^\s]+?)(https?:\/\/)/i);
+                      if (doubleMatch) {
+                        url = doubleMatch[1];
+                      }
                       setExtractUrl(url);
                       const dup = checkDuplicateUrl(url);
                       if (dup) {
                         setDuplicateWarning(`⚠️ Link Repetido! Este imóvel já foi cadastrado como "${dup.titulo}" (${dup.bairro}).`);
                       } else {
                         setDuplicateWarning(null);
-                      }
-                    }}
-                    onPaste={(e) => {
-                      const pastedUrl = e.clipboardData.getData('text');
-                      if (pastedUrl && (pastedUrl.startsWith('http://') || pastedUrl.startsWith('https://'))) {
-                        setExtractUrl(pastedUrl);
-                        handleAutoExtractWithUrl(pastedUrl);
                       }
                     }}
                     className="h-11 text-xs bg-slate-50 dark:bg-slate-950 font-medium"
@@ -648,13 +664,27 @@ export function PropertyFormModal({
 
                 {/* Suggestions Dropdown */}
                 {addressSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-60 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1 text-xs">
+                  <div
+                    ref={dropdownRef}
+                    className="absolute left-0 right-0 top-full mt-1 z-50 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 text-xs"
+                  >
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400">
+                      <span>Sugestões de Endereço</span>
+                      <button
+                        type="button"
+                        onClick={() => setAddressSuggestions([])}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
                     {addressSuggestions.map((item, idx) => (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleSelectAddressSuggestion(item)}
-                        className="w-full text-left px-3.5 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-start gap-2.5 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-indigo-50 dark:hover:bg-slate-800 flex items-start gap-2.5 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0 rounded-xl"
                       >
                         <MapPin className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                         <span className="min-w-0 flex-1 text-xs font-semibold text-slate-800 dark:text-slate-100 leading-normal">
@@ -662,6 +692,15 @@ export function PropertyFormModal({
                         </span>
                       </button>
                     ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setAddressSuggestions([])}
+                      className="w-full text-left px-3.5 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-2 border-t border-slate-100 dark:border-slate-800 mt-1 rounded-xl"
+                    >
+                      <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <span>Manter exatamente o que digitei: "{watch('endereco')}"</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -683,7 +722,7 @@ export function PropertyFormModal({
                 <Input
                   id="valorAluguel"
                   type="number"
-                  step="10"
+                  step="any"
                   placeholder="Ex: 3600"
                   {...register('valorAluguel')}
                 />
@@ -698,7 +737,7 @@ export function PropertyFormModal({
                 <Input
                   id="valorCondominio"
                   type="number"
-                  step="10"
+                  step="any"
                   placeholder="Ex: 820"
                   {...register('valorCondominio')}
                 />
@@ -710,7 +749,7 @@ export function PropertyFormModal({
                 <Input
                   id="valorIptu"
                   type="number"
-                  step="10"
+                  step="any"
                   placeholder="Ex: 210"
                   {...register('valorIptu')}
                 />
@@ -724,16 +763,16 @@ export function PropertyFormModal({
               <Maximize2 className="h-3.5 w-3.5" /> 3. Espaço, Quartos e Infraestrutura
             </h4>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
               {/* Área Útil */}
               <div className="space-y-1.5 col-span-2 sm:col-span-1">
                 <Label htmlFor="areaUtil">
-                  Área Útil (m²) <span className="text-rose-500">*</span>
+                  Área (m²) <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   id="areaUtil"
                   type="number"
-                  step="1"
+                  step="any"
                   placeholder="Ex: 84"
                   {...register('areaUtil')}
                 />
@@ -742,9 +781,20 @@ export function PropertyFormModal({
                 )}
               </div>
 
+              {/* Andar */}
+              <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                <Label htmlFor="andar">Andar</Label>
+                <Input
+                  id="andar"
+                  type="text"
+                  placeholder="Ex: 12º, Andar Alto..."
+                  {...register('andar')}
+                />
+              </div>
+
               {/* Quartos */}
               <div className="space-y-1.5">
-                <Label htmlFor="dormitorios">Dormitórios</Label>
+                <Label htmlFor="dormitorios">Quartos</Label>
                 <Input
                   id="dormitorios"
                   type="number"
@@ -780,7 +830,7 @@ export function PropertyFormModal({
 
               {/* Vagas */}
               <div className="space-y-1.5">
-                <Label htmlFor="vagasGaragem">Vagas Garagem</Label>
+                <Label htmlFor="vagasGaragem">Vagas</Label>
                 <Input
                   id="vagasGaragem"
                   type="number"

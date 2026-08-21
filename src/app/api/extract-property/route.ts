@@ -179,12 +179,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let targetUrl = url.trim();
+    const doubleMatch = targetUrl.match(/(https?:\/\/[^\s]+?)(https?:\/\/)/i);
+    if (doubleMatch) {
+      targetUrl = doubleMatch[1];
+    }
+
     // Fetch page HTML with standard browser headers
     let html = '';
     let isCloudflareBlocked = false;
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(targetUrl, {
+        redirect: 'follow',
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -387,6 +394,20 @@ export async function POST(req: NextRequest) {
 
     const areaMatch = html.match(/([\d\.,]+)\s*(?:m²|m2|metros)/i);
     if (areaMatch) area = parseMoney(areaMatch[1]);
+
+    // Extrair Andar
+    let andar = '';
+    const floorMatch = html.match(/(\d+)\s*º?\s*andar/i) ||
+                       html.match(/andar\s*:?\s*(\d+)/i);
+    if (floorMatch) {
+      andar = `${floorMatch[1]}º andar`;
+    } else if (html.toLowerCase().includes('andar alto')) {
+      andar = 'Andar Alto';
+    } else if (html.toLowerCase().includes('andar baixo')) {
+      andar = 'Andar Baixo';
+    } else if (html.toLowerCase().includes('térreo') || html.toLowerCase().includes('terreo')) {
+      andar = 'Térreo';
+    }
 
     // 6. Detectar Diferenciais
     const detectedDiferenciais: string[] = [];

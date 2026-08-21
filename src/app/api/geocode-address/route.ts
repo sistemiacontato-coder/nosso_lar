@@ -172,9 +172,10 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
 
     // 3. Fallback: OpenStreetMap Nominatim with clean query
     try {
-      const searchQ = cleanQuery.toLowerCase().includes('sp') || cleanQuery.toLowerCase().includes('são paulo') || cleanQuery.toLowerCase().includes('osasco')
+      const lowerClean = cleanQuery.toLowerCase();
+      const searchQ = lowerClean.includes('sp') || lowerClean.includes('são paulo') || lowerClean.includes('osasco')
         ? cleanQuery
-        : `${cleanQuery}, SP, Brasil`;
+        : `${cleanQuery}, Osasco, SP, Brasil`;
 
       const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-47.3,-24.1,-46.1,-23.1&bounded=0`;
       const nomRes = await fetch(nomUrl, {

@@ -84,6 +84,7 @@ export function RealtorModal({ open, onOpenChange, onSubmitSuggestion, existingP
         banheiros: d.banheiros || 2,
         vagasGaragem: d.vagasGaragem || 2,
         areaUtil: d.areaUtil || 80,
+        andar: d.andar || '',
         tempoAteTrabalhoMinutos: 25,
         tempoSaymonMinutos: 25,
         tempoKellyMinutos: 30,
