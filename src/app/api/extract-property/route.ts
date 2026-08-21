@@ -349,7 +349,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (!aluguel) {
-      const priceMatch = html.match(/class=["'](?:preco-imovel|preco-imovel-mobile|preco)["'][^>]*>\s*R\$\s*([\d\.,]+)/i) ||
+      const priceMatch = html.match(/<h2[^>]*>\s*R\$\s*([\d\.,]+)/i) ||
+                         html.match(/class=["'](?:preco-imovel|preco-imovel-mobile|preco)["'][^>]*>\s*R\$\s*([\d\.,]+)/i) ||
                          html.match(/R\$\s*([\d\.,]+)(?:\/mês|\/mes|\s*aluguel|\s*locaçã|locacao)/i) ||
                          html.match(/aluguel[\s\S]{0,100}?R\$\s*([\d\.,]+)/i) ||
                          html.match(/valor.*?:?\s*R\$\s*([\d\.,]+)/i);
@@ -357,8 +358,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!condominio) {
-      const condoMatch = html.match(/condom[íi]nio[\s\S]{0,150}?R\$\s*([\d\.,]+)/i) ||
-                         html.match(/cond\..*?:?\s*R\$\s*([\d\.,]+)/i);
+      const condoMatch = html.match(/cond[\s\S]{0,150}?R\$\s*([\d\.,]+)/i);
       if (condoMatch) condominio = parseMoney(condoMatch[1]);
     }
 
