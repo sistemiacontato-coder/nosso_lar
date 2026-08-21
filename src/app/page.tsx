@@ -17,7 +17,7 @@ import { Footer } from '@/components/Footer';
 import { Property, CommuteAnchors, getCoupleMatchBadge } from '@/types/property';
 import { PropertyFormValues } from '@/lib/schemas';
 import { formatCurrency } from '@/lib/utils';
-import { Building, Heart, MapPin, Sparkles, TrendingDown, Clock, Plus, ArrowRight, User } from 'lucide-react';
+import { Building, Heart, MapPin, Sparkles, TrendingDown, Clock, Plus, ArrowRight, User, RefreshCw } from 'lucide-react';
 
 import { AppSidebar } from '@/components/AppSidebar';
 
@@ -50,6 +50,7 @@ function DashboardContent() {
     toggleFavorite,
     toggleArchiveProperty,
     recalculateCommuteTimes,
+    isRecalculatingCommute,
     resetToSampleData,
     clearAllRatingsAndStatus,
     kpis,
@@ -264,13 +265,25 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsCommuteModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-indigo-100 transition-colors"
-                >
-                  ⚙️ Gerenciar Endereços Fixos
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => recalculateCommuteTimes(anchors)}
+                    disabled={isRecalculatingCommute}
+                    className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 text-blue-600 ${isRecalculatingCommute ? 'animate-spin' : ''}`} />
+                    {isRecalculatingCommute ? 'Recalculando...' : '🔄 Recalcular Todos os Trajetos'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCommuteModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-indigo-100 transition-colors"
+                  >
+                    ⚙️ Gerenciar Endereços Fixos
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

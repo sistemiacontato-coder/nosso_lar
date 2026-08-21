@@ -305,40 +305,47 @@ export function useProperties() {
     [setProperties]
   );
 
+  const [isRecalculatingCommute, setIsRecalculatingCommute] = useState(false);
+
   const recalculateCommuteTimes = useCallback(
     async (anchors: CommuteAnchors) => {
-      const updatedList = await Promise.all(
-        properties.map(async (p) => {
-          try {
-            const googleApiKey = typeof window !== 'undefined' ? localStorage.getItem('nosso_lar_google_maps_key') || undefined : undefined;
-            const res = await fetch('/api/calculate-commute', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
-                saymonAddress1: anchors.saymonAddress1 || anchors.saymonWork,
-                saymonTime: anchors.saymonTime,
-                saymonDay: anchors.saymonDay,
-                kellyAddress1: anchors.kellyAddress1 || anchors.kellyWork,
-                kellyTime: anchors.kellyTime,
-                kellyDay: anchors.kellyDay,
-                googleApiKey,
-              }),
-            });
-            const json = await res.json();
-            if (json.success) {
-              return {
-                ...p,
-                tempoSaymonMinutos: json.tempoSaymonMinutos,
-                tempoKellyMinutos: json.tempoKellyMinutos,
-                tempoAteTrabalhoMinutos: json.mediaTempoMinutos,
-              };
-            }
-          } catch (e) {}
-          return p;
-        })
-      );
-      setProperties(updatedList);
+      setIsRecalculatingCommute(true);
+      try {
+        const updatedList = await Promise.all(
+          properties.map(async (p) => {
+            try {
+              const googleApiKey = typeof window !== 'undefined' ? localStorage.getItem('nosso_lar_google_maps_key') || undefined : undefined;
+              const res = await fetch('/api/calculate-commute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
+                  saymonAddress1: anchors.saymonAddress1 || anchors.saymonWork,
+                  saymonTime: anchors.saymonTime,
+                  saymonDay: anchors.saymonDay,
+                  kellyAddress1: anchors.kellyAddress1 || anchors.kellyWork,
+                  kellyTime: anchors.kellyTime,
+                  kellyDay: anchors.kellyDay,
+                  googleApiKey,
+                }),
+              });
+              const json = await res.json();
+              if (json.success) {
+                return {
+                  ...p,
+                  tempoSaymonMinutos: json.tempoSaymonMinutos,
+                  tempoKellyMinutos: json.tempoKellyMinutos,
+                  tempoAteTrabalhoMinutos: json.mediaTempoMinutos,
+                };
+              }
+            } catch (e) {}
+            return p;
+          })
+        );
+        setProperties(updatedList);
+      } finally {
+        setIsRecalculatingCommute(false);
+      }
     },
     [properties, setProperties]
   );
@@ -639,6 +646,7 @@ export function useProperties() {
     toggleFavorite,
     toggleArchiveProperty,
     recalculateCommuteTimes,
+    isRecalculatingCommute,
     resetToSampleData,
     clearAllRatingsAndStatus,
     kpis,
