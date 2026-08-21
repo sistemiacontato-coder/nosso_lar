@@ -30,6 +30,7 @@ interface PropertyDetailModalProps {
   onDelete: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onStatusChange: (id: string, status: PropertyStatus) => void;
+  onQuickUpdateProperty?: (id: string, updates: Partial<Property>) => void;
 }
 
 export function PropertyDetailModal({
@@ -40,6 +41,7 @@ export function PropertyDetailModal({
   onDelete,
   onToggleFavorite,
   onStatusChange,
+  onQuickUpdateProperty,
 }: PropertyDetailModalProps) {
   if (!property) return null;
 

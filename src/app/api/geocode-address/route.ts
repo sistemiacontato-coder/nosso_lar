@@ -125,9 +125,56 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
       }
     }
 
-    // 2. Secondary: Photon Fuzzy Geocoder (Komoot OSM - Fast & Typo Tolerant)
+    // Prepare Osasco-focused query string
+    const lowerClean = cleanQuery.toLowerCase();
+    const osascoQuery = lowerClean.includes('sp') || lowerClean.includes('são paulo') || lowerClean.includes('osasco')
+      ? cleanQuery
+      : `${cleanQuery}, Osasco, SP, Brasil`;
+
+    // 2. Primary Geocoder: OpenStreetMap Nominatim (High Accuracy for Streets & Numbers in Osasco/SP)
     try {
-      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=5&bbox=-47.3,-24.1,-46.1,-23.1`;
+      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(osascoQuery)}&format=json&addressdetails=1&limit=5&countrycodes=br`;
+      const nomRes = await fetch(nomUrl, {
+        headers: {
+          'User-Agent': 'NossoLarApp/1.0 (nosso-lar@sistemia.com.br)',
+          'Accept-Language': 'pt-BR,pt;q=0.9',
+        },
+      });
+
+      if (nomRes.ok) {
+        const nomData = await nomRes.json();
+        if (Array.isArray(nomData)) {
+          for (const item of nomData) {
+            const address = item.address || {};
+            const road = address.road || address.pedestrian || address.suburb || item.display_name.split(',')[0];
+            const houseNumber = address.house_number ? `, ${address.house_number}` : '';
+            const suburb = address.suburb || address.neighbourhood || address.city_district || '';
+            const city = address.city || address.town || address.municipality || 'Osasco';
+            const state = address.state || 'SP';
+
+            const fullLabel = [road + houseNumber, suburb, city, state].filter(Boolean).join(', ');
+            const key = `nom-${item.place_id || fullLabel}`;
+
+            if (!seenIds.has(key)) {
+              seenIds.add(key);
+              suggestions.push({
+                id: key,
+                displayName: item.display_name || fullLabel,
+                shortTitle: fullLabel,
+                lat: parseFloat(item.lat),
+                lon: parseFloat(item.lon),
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Nominatim API error:', e);
+    }
+
+    // 3. Secondary: Photon Fuzzy Geocoder (Komoot OSM - Backup for Typos)
+    try {
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(osascoQuery)}&limit=5&bbox=-47.3,-24.1,-46.1,-23.1`;
       const pRes = await fetch(photonUrl, {
         headers: { 'User-Agent': 'NossoLarApp/1.0' },
       });
@@ -145,7 +192,7 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
               const street = props.name || props.street || cleanQuery;
               const houseNum = props.housenumber ? `, ${props.housenumber}` : '';
               const district = props.district || props.locality || props.suburb || '';
-              const city = props.city || props.town || 'São Paulo';
+              const city = props.city || props.town || 'Osasco';
               const state = props.state || 'SP';
 
               const shortTitle = [street + houseNum, district, city, state].filter(Boolean).join(', ');
@@ -169,35 +216,6 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
     } catch (e) {
       console.warn('Photon API error:', e);
     }
-
-    // 3. Fallback: OpenStreetMap Nominatim with clean query
-    try {
-      const lowerClean = cleanQuery.toLowerCase();
-      const searchQ = lowerClean.includes('sp') || lowerClean.includes('são paulo') || lowerClean.includes('osasco')
-        ? cleanQuery
-        : `${cleanQuery}, Osasco, SP, Brasil`;
-
-      const nomUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQ)}&format=json&addressdetails=1&limit=5&countrycodes=br&viewbox=-47.3,-24.1,-46.1,-23.1&bounded=0`;
-      const nomRes = await fetch(nomUrl, {
-        headers: {
-          'User-Agent': 'NossoLarApp/1.0 (nosso-lar@sistemia.com.br)',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-      });
-
-      if (nomRes.ok) {
-        const nomData = await nomRes.json();
-        if (Array.isArray(nomData)) {
-          for (const item of nomData) {
-            const address = item.address || {};
-            const road = address.road || address.pedestrian || address.suburb || item.display_name.split(',')[0];
-            const houseNumber = address.house_number ? `, ${address.house_number}` : '';
-            const suburb = address.suburb || address.neighbourhood || address.city_district || '';
-            const city = address.city || address.town || address.municipality || 'São Paulo';
-            const state = address.state || 'SP';
-
-            const fullLabel = [road + houseNumber, suburb, city, state].filter(Boolean).join(', ');
-            const key = `nom-${item.place_id || fullLabel}`;
 
             if (!seenIds.has(key)) {
               seenIds.add(key);

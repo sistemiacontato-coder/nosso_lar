@@ -141,13 +141,13 @@ export function PropertyFormModal({
           status: initialData.status,
 
           // Saymon
-          notaSaymon: initialData.notaSaymon || 5,
-          vereditoSaymon: initialData.vereditoSaymon || 'Aprovado',
+          notaSaymon: initialData.notaSaymon || ('' as unknown as number),
+          vereditoSaymon: initialData.vereditoSaymon || ('' as any),
           opiniaoSaymon: initialData.opiniaoSaymon || '',
 
           // Kelly
-          notaKelly: initialData.notaKelly || 5,
-          vereditoKelly: initialData.vereditoKelly || 'Aprovada',
+          notaKelly: initialData.notaKelly || ('' as unknown as number),
+          vereditoKelly: initialData.vereditoKelly || ('' as any),
           opiniaoKelly: initialData.opiniaoKelly || '',
 
           observacoes: initialData.observacoes || '',

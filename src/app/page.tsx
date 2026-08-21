@@ -428,6 +428,7 @@ function DashboardContent() {
         onDelete={handleDelete}
         onToggleFavorite={toggleFavorite}
         onStatusChange={updateStatus}
+        onQuickUpdateProperty={quickUpdateProperty}
       />
 
       {/* Comparison Modal */}
