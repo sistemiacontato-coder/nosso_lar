@@ -286,7 +286,7 @@ function DashboardContent() {
                     </p>
                     {anchors.saymonAddress1 && (
                       <p className="text-[11px] text-amber-900/70 dark:text-amber-300/70 flex items-center gap-1 mt-0.5 font-medium">
-                        <Clock className="h-3 w-3 text-amber-600" /> Saída: <strong>{anchors.saymonTime || '08:00'}</strong>
+                        <Clock className="h-3 w-3 text-amber-600" /> Saída: <strong>{anchors.saymonTime || '08:00'}</strong> ({anchors.saymonDay === 'weekend' ? '🏖️ Fim de Semana' : '📅 Dia Útil'})
                       </p>
                     )}
                   </div>
@@ -304,7 +304,7 @@ function DashboardContent() {
                     </p>
                     {anchors.kellyAddress1 && (
                       <p className="text-[11px] text-rose-900/70 dark:text-rose-300/70 flex items-center gap-1 mt-0.5 font-medium">
-                        <Clock className="h-3 w-3 text-rose-600" /> Saída: <strong>{anchors.kellyTime || '08:00'}</strong>
+                        <Clock className="h-3 w-3 text-rose-600" /> Saída: <strong>{anchors.kellyTime || '08:00'}</strong> ({anchors.kellyDay === 'weekend' ? '🏖️ Fim de Semana' : '📅 Dia Útil'})
                       </p>
                     )}
                   </div>
