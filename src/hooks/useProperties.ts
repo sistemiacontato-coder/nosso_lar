@@ -22,15 +22,22 @@ export function useProperties() {
     fetch('/api/sync-properties')
       .then((res) => res.json())
       .then((json) => {
-        if (json.success && Array.isArray(json.properties) && json.properties.length > 0) {
-          setProperties((prev) => {
-            const map = new Map<string, Property>();
-            json.properties.forEach((p: Property) => map.set(p.id, p));
-            prev.forEach((p: Property) => {
-              if (!map.has(p.id)) map.set(p.id, p);
+        if (json.success) {
+          if (Array.isArray(json.properties) && json.properties.length > 0) {
+            setProperties((prev) => {
+              const map = new Map<string, Property>();
+              json.properties.forEach((p: Property) => map.set(p.id, p));
+              prev.forEach((p: Property) => {
+                if (!map.has(p.id)) map.set(p.id, p);
+              });
+              return Array.from(map.values());
             });
-            return Array.from(map.values());
-          });
+          }
+          if (json.anchors) {
+            try {
+              localStorage.setItem('nosso_lar_commute_anchors_v3', JSON.stringify(json.anchors));
+            } catch (e) {}
+          }
         }
       })
       .catch(() => {});
@@ -62,6 +69,13 @@ export function useProperties() {
         const id = payload.payload?.id;
         if (!id) return;
         setProperties((prev) => prev.filter((p) => p.id !== id));
+      })
+      .on('broadcast', { event: 'anchors_updated' }, (payload: any) => {
+        const anchors = payload.payload;
+        if (!anchors) return;
+        try {
+          localStorage.setItem('nosso_lar_commute_anchors_v3', JSON.stringify(anchors));
+        } catch (e) {}
       })
       .subscribe();
 

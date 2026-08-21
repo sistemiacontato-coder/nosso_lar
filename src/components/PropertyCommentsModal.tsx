@@ -108,7 +108,7 @@ export function PropertyCommentsModal({
     <Dialog open={open} onOpenChange={onOpenChange} maxWidth="3xl">
       <div className="flex flex-col max-h-[82vh] overflow-hidden -m-1">
         {/* 1. STICKY HEADER */}
-        <div className="shrink-0 pb-2.5 mb-2 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="shrink-0 pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 pr-10">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-rose-500 text-white font-bold shrink-0 shadow-sm">
               <MessageSquare className="h-4 w-4" />

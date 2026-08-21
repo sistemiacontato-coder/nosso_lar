@@ -10,6 +10,7 @@ const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supa
 
 // Memory fallback store if Supabase table is not yet created
 let memoryPropertyStore: any[] | null = null;
+let memoryAnchorsStore: any = null;
 
 export async function GET() {
   try {
@@ -23,71 +24,41 @@ export async function GET() {
       if (!error && data && data.length > 0) {
         const properties = data.map((row: any) => row.data || row);
         memoryPropertyStore = properties;
-        return NextResponse.json({ success: true, properties, source: 'supabase_imoveis' });
-      }
-
-      // 2. Se a tabela imoveis estiver vazia, verifica sugestões dos corretores
-      const { data: sugData, error: sugErr } = await supabase
-        .from('nosso_lar_sugestoes')
-        .select('*')
-        .order('criado_em', { ascending: false });
-
-      if (!sugErr && sugData && sugData.length > 0) {
-        const sugestoes = sugData.map((row: any) => ({
-          id: row.id,
-          titulo: row.titulo,
-          urlAnuncio: row.url_anuncio || '',
-          urlImagem: row.url_imagem || undefined,
-          bairro: row.bairro || 'Osasco',
-          endereco: row.endereco || undefined,
-          valorAluguel: Number(row.valor_aluguel) || 0,
-          valorCondominio: Number(row.valor_condominio) || 0,
-          valorIptu: Number(row.valor_iptu) || 0,
-          custoTotalMensal: (Number(row.valor_aluguel) || 0) + (Number(row.valor_condominio) || 0) + (Number(row.valor_iptu) || 0),
-          dormitorios: Number(row.dormitorios) || 1,
-          suites: Number(row.suites) || 0,
-          banheiros: Number(row.banheiros) || 1,
-          vagasGaragem: Number(row.vagas_garagem) || 0,
-          areaUtil: Number(row.area_util) || 50,
-          precoMetroQuadrado: 0,
-          tempoAteTrabalhoMinutos: Number(row.tempo_trabalho_min) || 25,
-          distanciaMetroKm: 1.5,
-          diferenciais: Array.isArray(row.diferenciais) ? row.diferenciais : [],
-          status: 'Para Analisar' as const,
-          notaSaymon: 0,
-          notaKelly: 0,
-          mediaCasal: 0,
-          notaPessoal: 0,
-          observacoes: row.observacoes || undefined,
-          duvidasCorretor: row.duvidas_corretor || undefined,
-          isSugestao: true,
-          nomeCorretor: row.nome_corretor || undefined,
-          telefoneCorretor: row.telefone_corretor || undefined,
-          dataCadastro: row.criado_em || new Date().toISOString(),
-          isFavorito: false,
-        }));
-
-        return NextResponse.json({ success: true, properties: sugestoes, source: 'supabase_sugestoes' });
+        return NextResponse.json({
+          success: true,
+          properties,
+          anchors: memoryAnchorsStore,
+          source: 'supabase_imoveis',
+        });
       }
     }
 
-    if (memoryPropertyStore) {
-      return NextResponse.json({ success: true, properties: memoryPropertyStore, source: 'memory' });
-    }
-
-    return NextResponse.json({ success: true, properties: [], source: 'none' });
+    return NextResponse.json({
+      success: true,
+      properties: memoryPropertyStore || [],
+      anchors: memoryAnchorsStore,
+      source: memoryPropertyStore ? 'memory' : 'none',
+    });
   } catch (error: any) {
     console.error('Sync GET error:', error);
-    return NextResponse.json({ success: true, properties: memoryPropertyStore || [] });
+    return NextResponse.json({
+      success: true,
+      properties: memoryPropertyStore || [],
+      anchors: memoryAnchorsStore,
+    });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { properties, property } = body;
+    const { properties, property, anchors } = body;
 
     let updatedList: any[] = [];
+
+    if (anchors) {
+      memoryAnchorsStore = anchors;
+    }
 
     if (Array.isArray(properties)) {
       updatedList = properties;
@@ -103,6 +74,8 @@ export async function POST(req: NextRequest) {
       } else {
         updatedList = [property];
       }
+    } else if (memoryPropertyStore) {
+      updatedList = memoryPropertyStore;
     }
 
     memoryPropertyStore = updatedList;
@@ -121,7 +94,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, properties: updatedList });
+    return NextResponse.json({
+      success: true,
+      properties: updatedList,
+      anchors: memoryAnchorsStore,
+    });
   } catch (error: any) {
     console.error('Sync POST error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
