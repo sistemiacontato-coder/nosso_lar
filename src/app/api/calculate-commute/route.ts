@@ -7,9 +7,33 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
   if (!address || address.trim().length < 2) return null;
   const lower = address.toLowerCase();
 
-  // Instant landmark fallback for Osasco & SP West
+  // Instant landmark fallback for Osasco, SP West & SP South/Central hubs
+  if (lower.includes('gabrielle') || lower.includes('annunzio') || lower.includes('campo belo')) {
+    return { lat: -23.6190, lon: -46.6740 };
+  }
   if (lower.includes('prata') || lower.includes('cidade de deus') || lower.includes('bradesco')) {
     return { lat: -23.5358, lon: -46.7725 };
+  }
+  if (lower.includes('faria lima')) {
+    return { lat: -23.5780, lon: -46.6890 };
+  }
+  if (lower.includes('berrini')) {
+    return { lat: -23.6060, lon: -46.6960 };
+  }
+  if (lower.includes('paulista')) {
+    return { lat: -23.5610, lon: -46.6560 };
+  }
+  if (lower.includes('itaim')) {
+    return { lat: -23.5850, lon: -46.6780 };
+  }
+  if (lower.includes('pinheiros')) {
+    return { lat: -23.5670, lon: -46.7010 };
+  }
+  if (lower.includes('olímpia') || lower.includes('olimpia')) {
+    return { lat: -23.5950, lon: -46.6860 };
+  }
+  if (lower.includes('santo amaro')) {
+    return { lat: -23.6300, lon: -46.7050 };
   }
   if (lower.includes('miguel rachid')) {
     return { lat: -23.5320, lon: -46.7790 };
@@ -28,13 +52,13 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
   }
 
   try {
-    const searchQuery = address.toLowerCase().includes('osasco') || address.toLowerCase().includes('são paulo')
+    const searchQuery = address.toLowerCase().includes('osasco') || address.toLowerCase().includes('são paulo') || address.toLowerCase().includes('sp')
       ? address
-      : `${address}, Osasco, SP, Brasil`;
+      : `${address}, São Paulo, SP, Brasil`;
 
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       searchQuery
-    )}&format=json&limit=1&countrycodes=br&viewbox=-46.85,-23.60,-46.70,-23.50&bounded=0`;
+    )}&format=json&limit=1&countrycodes=br`;
 
     const res = await fetch(url, {
       headers: {
