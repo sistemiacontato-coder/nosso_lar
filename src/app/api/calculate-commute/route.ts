@@ -52,9 +52,9 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
   }
 
   try {
-    const searchQuery = address.toLowerCase().includes('osasco') || address.toLowerCase().includes('são paulo') || address.toLowerCase().includes('sp')
+    const searchQuery = address.toLowerCase().includes('brasil') || address.toLowerCase().includes('brazil')
       ? address
-      : `${address}, São Paulo, SP, Brasil`;
+      : `${address}, Brasil`;
 
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       searchQuery
@@ -157,32 +157,42 @@ async function getGoogleDistanceMatrix(
 
 // Helper to calculate traffic factor based on departure time and day type
 function getTrafficFactor(departureTime?: string, dayType?: string): number {
-  if (dayType === 'weekend') return 1.0; // Weekend is smooth/empty
-
-  if (!departureTime) return 1.35; // Default peak traffic
-  const [hourStr, minStr] = departureTime.split(':');
+  const [hourStr, minStr] = (departureTime || '08:00').split(':');
   const hour = parseInt(hourStr || '8', 10);
   const min = parseInt(minStr || '0', 10);
   const timeInDecimal = hour + min / 60;
 
-  // Morning Peak (07:00 - 09:30) -> High Traffic (1.45x)
-  if (timeInDecimal >= 7.0 && timeInDecimal <= 9.5) {
-    return 1.45;
-  }
-  // Evening Peak (17:00 - 19:30) -> High Traffic (1.50x)
-  if (timeInDecimal >= 17.0 && timeInDecimal <= 19.5) {
-    return 1.50;
-  }
-  // Off-Peak / Soft Hours (10:00 - 16:00, 20:00 - 06:30) -> Smooth Traffic (1.0x)
-  if (timeInDecimal >= 10.0 && timeInDecimal <= 16.0) {
-    return 1.10;
-  }
-  if (timeInDecimal >= 20.0 || timeInDecimal <= 6.5) {
-    return 1.0;
+  // Weekend (Sábado / Domingo)
+  if (dayType === 'weekend') {
+    // Night / Midnight (22:00 - 06:00) -> Very Fast / No Traffic (0.75x)
+    if (timeInDecimal >= 22.0 || timeInDecimal <= 6.0) {
+      return 0.75;
+    }
+    // Daytime Weekend -> Smooth (0.90x)
+    return 0.90;
   }
 
-  // Intermediate (06:30 - 07:00, 09:30 - 10:00, 16:00 - 17:00) -> Moderate (1.25x)
-  return 1.25;
+  // Weekday (Segunda a Sexta)
+  // Night / Midnight (22:00 - 06:00) -> Very Fast / No Traffic (0.75x)
+  if (timeInDecimal >= 22.0 || timeInDecimal <= 6.0) {
+    return 0.75;
+  }
+
+  // Morning Peak (07:00 - 09:30) -> Extreme Rush Hour Traffic (1.65x)
+  if (timeInDecimal >= 7.0 && timeInDecimal <= 9.5) {
+    return 1.65;
+  }
+  // Evening Peak (17:00 - 19:30) -> Extreme Rush Hour Traffic (1.70x)
+  if (timeInDecimal >= 17.0 && timeInDecimal <= 19.5) {
+    return 1.70;
+  }
+  // Off-Peak Daytime (10:00 - 16:00) -> Moderate (1.15x)
+  if (timeInDecimal >= 10.0 && timeInDecimal <= 16.0) {
+    return 1.15;
+  }
+
+  // Shoulder hours (06:00 - 07:00, 09:30 - 10:00, 16:00 - 17:00, 19:30 - 22:00) -> Moderate-High (1.30x)
+  return 1.30;
 }
 
 // Estimate transit/driving time in minutes for Greater SP area based on distance and departure time

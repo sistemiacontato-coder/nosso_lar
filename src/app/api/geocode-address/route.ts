@@ -63,15 +63,14 @@ export async function GET(req: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // 1. Primary: Gemini AI Location Resolver (Returns exact Google Maps Landmarks & POIs for Brazil/SP)
+    // 1. Primary: Gemini AI Location Resolver (Returns exact Google Maps Landmarks & POIs for ALL of Brazil)
     if (apiKey) {
       try {
-        const prompt = `Você é uma API do Google Maps para a região de Osasco e Grande São Paulo, Brasil. 
-Dada a busca por endereço ou local "${cleanQuery}", retorne no máximo 5 locais reais e precisos do Google Maps (prédios conhecidos de empresas como Bradesco Cidade de Deus, shopping centers, avenidas, ruas e bairros em Osasco / São Paulo / Zona Oeste SP).
+        const prompt = `Você é um resolvedor universal de endereços e locais do Google Maps para TODO O BRASIL.
+Dada a busca por endereço ou local "${cleanQuery}", retorne no máximo 5 locais reais e precisos do Google Maps de qualquer cidade, bairro ou estado do Brasil (São Paulo, Rio de Janeiro, Curitiba, Belo Horizonte, Brasília, Salvador, Porto Alegre, Recife, Florianópolis, Goiânia, Fortaleza, Manaus, Belém, etc.).
 
 IMPORTANTE: 
 - Se a busca for "Prédio Prata" ou similar, o usuário se refere ao Prédio Prata do Bradesco na Cidade de Deus, Osasco - SP.
-- Priorize SEMPRE locais em Osasco e São Paulo Zona Oeste sobre cidades distantes do interior.
 
 Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
 [
@@ -174,7 +173,7 @@ Responda EXCLUSIVAMENTE em formato JSON VÁLIDO sem markdown:
 
     // 3. Secondary: Photon Fuzzy Geocoder (Komoot OSM - Backup for Typos)
     try {
-      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(osascoQuery)}&limit=5&bbox=-47.3,-24.1,-46.1,-23.1`;
+      const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQuery)}&limit=5`;
       const pRes = await fetch(photonUrl, {
         headers: { 'User-Agent': 'NossoLarApp/1.0' },
       });
