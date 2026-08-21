@@ -17,6 +17,25 @@ export function useProperties() {
     INITIAL_PROPERTIES
   );
 
+  // Busca sincronização em nuvem ao carregar a página
+  useEffect(() => {
+    fetch('/api/sync-properties')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.properties) && json.properties.length > 0) {
+          setProperties((prev) => {
+            const map = new Map<string, Property>();
+            json.properties.forEach((p: Property) => map.set(p.id, p));
+            prev.forEach((p: Property) => {
+              if (!map.has(p.id)) map.set(p.id, p);
+            });
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch(() => {});
+  }, [setProperties]);
+
   // ─── Supabase Realtime: Sincronia de alterções ao vivo entre Saymon e Kelly ───
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
@@ -342,6 +361,14 @@ export function useProperties() {
           type: 'broadcast',
           event: 'property_updated',
           payload: finalUpdated,
+        }).catch(() => {});
+      }
+
+      if (finalUpdated) {
+        fetch('/api/sync-properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ property: finalUpdated }),
         }).catch(() => {});
       }
     },
