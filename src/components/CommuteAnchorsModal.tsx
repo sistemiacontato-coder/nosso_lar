@@ -215,23 +215,15 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                 <div className="pt-1 flex items-center justify-between">
                   <Label htmlFor="saymonTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                    Horário de Saída Habitual (Pico):
+                    Horário de Saída Habitual:
                   </Label>
-                  <select
+                  <Input
                     id="saymonTime"
+                    type="time"
                     value={anchors.saymonTime || '08:00'}
                     onChange={(e) => setAnchors((prev) => ({ ...prev, saymonTime: e.target.value }))}
-                    className="text-xs font-bold px-2 py-1 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 cursor-pointer shadow-xs"
-                  >
-                    <option value="07:00">07:00 (Pico Manhã)</option>
-                    <option value="07:30">07:30 (Pico Manhã)</option>
-                    <option value="08:00">08:00 (Pico Manhã)</option>
-                    <option value="08:30">08:30 (Pico Manhã)</option>
-                    <option value="09:00">09:00 (Pico Moderado)</option>
-                    <option value="12:00">12:00 (Fora de Pico)</option>
-                    <option value="17:30">17:30 (Pico Tarde)</option>
-                    <option value="18:00">18:00 (Pico Tarde)</option>
-                  </select>
+                    className="w-32 text-xs font-bold text-center px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 shadow-xs cursor-pointer"
+                  />
                 </div>
               </div>
             </div>
@@ -296,23 +288,15 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                 <div className="pt-1 flex items-center justify-between">
                   <Label htmlFor="kellyTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-rose-500" />
-                    Horário de Saída Habitual (Pico):
+                    Horário de Saída Habitual:
                   </Label>
-                  <select
+                  <Input
                     id="kellyTime"
+                    type="time"
                     value={anchors.kellyTime || '08:00'}
                     onChange={(e) => setAnchors((prev) => ({ ...prev, kellyTime: e.target.value }))}
-                    className="text-xs font-bold px-2 py-1 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 cursor-pointer shadow-xs"
-                  >
-                    <option value="07:00">07:00 (Pico Manhã)</option>
-                    <option value="07:30">07:30 (Pico Manhã)</option>
-                    <option value="08:00">08:00 (Pico Manhã)</option>
-                    <option value="08:30">08:30 (Pico Manhã)</option>
-                    <option value="09:00">09:00 (Pico Moderado)</option>
-                    <option value="12:00">12:00 (Fora de Pico)</option>
-                    <option value="17:30">17:30 (Pico Tarde)</option>
-                    <option value="18:00">18:00 (Pico Tarde)</option>
-                  </select>
+                    className="w-32 text-xs font-bold text-center px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs cursor-pointer"
+                  />
                 </div>
               </div>
             </div>

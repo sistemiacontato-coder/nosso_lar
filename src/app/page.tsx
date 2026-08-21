@@ -275,7 +275,7 @@ function DashboardContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Saymon Address */}
-                <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-2">
+                <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-300">
                     <User className="h-4 w-4 text-amber-600" />
                     <span>Perfil Saymon</span>
@@ -284,11 +284,16 @@ function DashboardContent() {
                     <p className="truncate">
                       <strong>Endereço:</strong> {anchors.saymonAddress1 || 'Não cadastrado'}
                     </p>
+                    {anchors.saymonAddress1 && (
+                      <p className="text-[11px] text-amber-900/70 dark:text-amber-300/70 flex items-center gap-1 mt-0.5 font-medium">
+                        <Clock className="h-3 w-3 text-amber-600" /> Saída: <strong>{anchors.saymonTime || '08:00'}</strong>
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Kelly Address */}
-                <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 space-y-2">
+                <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40 space-y-1.5">
                   <div className="flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
                     <User className="h-4 w-4 text-rose-600" />
                     <span>Perfil Kelly</span>
@@ -297,6 +302,11 @@ function DashboardContent() {
                     <p className="truncate">
                       <strong>Endereço:</strong> {anchors.kellyAddress1 || 'Não cadastrado'}
                     </p>
+                    {anchors.kellyAddress1 && (
+                      <p className="text-[11px] text-rose-900/70 dark:text-rose-300/70 flex items-center gap-1 mt-0.5 font-medium">
+                        <Clock className="h-3 w-3 text-rose-600" /> Saída: <strong>{anchors.kellyTime || '08:00'}</strong>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

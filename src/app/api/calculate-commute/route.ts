@@ -66,6 +66,32 @@ function haversineDistance(coords1: { lat: number; lon: number }, coords2: { lat
   return R * c;
 }
 
+// Helper to convert custom time string ("08:15") to Unix timestamp seconds for Google Maps Distance Matrix API
+function getDepartureTimestampSeconds(timeStr?: string): number {
+  const now = new Date();
+  if (!timeStr) return Math.floor(now.getTime() / 1000);
+
+  const [hStr, mStr] = timeStr.split(':');
+  const targetHour = parseInt(hStr || '8', 10);
+  const targetMin = parseInt(mStr || '0', 10);
+
+  const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetHour, targetMin, 0);
+
+  if (targetDate.getTime() < now.getTime()) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  // Ensure it's a weekday for realistic traffic
+  const day = targetDate.getDay();
+  if (day === 6) {
+    targetDate.setDate(targetDate.getDate() + 2);
+  } else if (day === 0) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  return Math.floor(targetDate.getTime() / 1000);
+}
+
 // Helper to call Google Maps Distance Matrix API for official Google Maps traffic & route duration
 async function getGoogleDistanceMatrix(
   origin: string,
@@ -77,9 +103,10 @@ async function getGoogleDistanceMatrix(
   if (!key || !key.trim()) return null;
 
   try {
+    const depTimeSec = getDepartureTimestampSeconds(departureTime);
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(
       origin
-    )}&destinations=${encodeURIComponent(destination)}&departure_time=now&traffic_model=best_guess&language=pt-BR&key=${key.trim()}`;
+    )}&destinations=${encodeURIComponent(destination)}&departure_time=${depTimeSec}&traffic_model=best_guess&language=pt-BR&key=${key.trim()}`;
 
     const res = await fetch(url);
     if (!res.ok) return null;
