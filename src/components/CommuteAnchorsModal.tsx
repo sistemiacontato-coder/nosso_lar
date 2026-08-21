@@ -14,9 +14,11 @@ export const DEFAULT_COMMUTE_ANCHORS: CommuteAnchors = {
   saymonAddress1: '',
   saymonAddress2: '',
   saymonTime: '08:00',
+  saymonDay: 'weekday',
   kellyAddress1: '',
   kellyAddress2: '',
   kellyTime: '08:00',
+  kellyDay: 'weekday',
 };
 
 export function getStoredCommuteAnchors(): CommuteAnchors {
@@ -29,9 +31,11 @@ export function getStoredCommuteAnchors(): CommuteAnchors {
         saymonAddress1: parsed.saymonAddress1 || '',
         saymonAddress2: parsed.saymonAddress2 || '',
         saymonTime: parsed.saymonTime || '08:00',
+        saymonDay: parsed.saymonDay || 'weekday',
         kellyAddress1: parsed.kellyAddress1 || '',
         kellyAddress2: parsed.kellyAddress2 || '',
         kellyTime: parsed.kellyTime || '08:00',
+        kellyDay: parsed.kellyDay || 'weekday',
       };
     }
   } catch (e) {}
@@ -211,19 +215,30 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                   </div>
                 )}
 
-                {/* Horário de Saída (Saymon) */}
-                <div className="pt-1 flex items-center justify-between">
+                {/* Horário e Dia de Saída (Saymon) */}
+                <div className="pt-1 flex items-center justify-between gap-2">
                   <Label htmlFor="saymonTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                    Horário de Saída Habitual:
+                    Saída & Dia Habitual:
                   </Label>
-                  <Input
-                    id="saymonTime"
-                    type="time"
-                    value={anchors.saymonTime || '08:00'}
-                    onChange={(e) => setAnchors((prev) => ({ ...prev, saymonTime: e.target.value }))}
-                    className="w-32 text-xs font-bold text-center px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 shadow-xs cursor-pointer"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      id="saymonDay"
+                      value={anchors.saymonDay || 'weekday'}
+                      onChange={(e) => setAnchors((prev) => ({ ...prev, saymonDay: e.target.value }))}
+                      className="text-xs font-bold px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 cursor-pointer shadow-xs"
+                    >
+                      <option value="weekday">📅 Dia Útil (Seg–Sex)</option>
+                      <option value="weekend">🏖️ Fim de Semana (Sáb/Dom)</option>
+                    </select>
+                    <Input
+                      id="saymonTime"
+                      type="time"
+                      value={anchors.saymonTime || '08:00'}
+                      onChange={(e) => setAnchors((prev) => ({ ...prev, saymonTime: e.target.value }))}
+                      className="w-24 text-xs font-bold text-center px-1 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 shadow-xs cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -284,19 +299,30 @@ export function CommuteAnchorsModal({ open, onOpenChange, onSave, targetUser = '
                   </div>
                 )}
 
-                {/* Horário de Saída (Kelly) */}
-                <div className="pt-1 flex items-center justify-between">
+                {/* Horário e Dia de Saída (Kelly) */}
+                <div className="pt-1 flex items-center justify-between gap-2">
                   <Label htmlFor="kellyTime" className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-rose-500" />
-                    Horário de Saída Habitual:
+                    Saída & Dia Habitual:
                   </Label>
-                  <Input
-                    id="kellyTime"
-                    type="time"
-                    value={anchors.kellyTime || '08:00'}
-                    onChange={(e) => setAnchors((prev) => ({ ...prev, kellyTime: e.target.value }))}
-                    className="w-32 text-xs font-bold text-center px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs cursor-pointer"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      id="kellyDay"
+                      value={anchors.kellyDay || 'weekday'}
+                      onChange={(e) => setAnchors((prev) => ({ ...prev, kellyDay: e.target.value }))}
+                      className="text-xs font-bold px-2 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 cursor-pointer shadow-xs"
+                    >
+                      <option value="weekday">📅 Dia Útil (Seg–Sex)</option>
+                      <option value="weekend">🏖️ Fim de Semana (Sáb/Dom)</option>
+                    </select>
+                    <Input
+                      id="kellyTime"
+                      type="time"
+                      value={anchors.kellyTime || '08:00'}
+                      onChange={(e) => setAnchors((prev) => ({ ...prev, kellyTime: e.target.value }))}
+                      className="w-24 text-xs font-bold text-center px-1 py-1 h-8 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

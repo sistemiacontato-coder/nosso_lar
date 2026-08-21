@@ -61,10 +61,12 @@ export interface Property {
 export interface CommuteAnchors {
   saymonAddress1: string;
   saymonAddress2?: string;
-  saymonTime?: string; // ex: '08:00', '08:30', '18:00' (Pico)
+  saymonTime?: string; // ex: '08:00'
+  saymonDay?: string; // 'weekday' (Segunda a Sexta) | 'weekend' (Fim de Semana)
   kellyAddress1: string;
   kellyAddress2?: string;
-  kellyTime?: string; // ex: '08:00', '08:30', '18:00' (Pico)
+  kellyTime?: string; // ex: '08:00'
+  kellyDay?: string; // 'weekday' (Segunda a Sexta) | 'weekend' (Fim de Semana)
 
   // Backward compatibility aliases
   saymonWork?: string;

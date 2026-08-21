@@ -318,8 +318,10 @@ export function useProperties() {
                 propertyAddress: `${p.bairro}, ${p.endereco || ''}`,
                 saymonAddress1: anchors.saymonAddress1 || anchors.saymonWork,
                 saymonTime: anchors.saymonTime,
+                saymonDay: anchors.saymonDay,
                 kellyAddress1: anchors.kellyAddress1 || anchors.kellyWork,
                 kellyTime: anchors.kellyTime,
+                kellyDay: anchors.kellyDay,
                 googleApiKey,
               }),
             });

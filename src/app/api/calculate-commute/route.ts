@@ -66,8 +66,8 @@ function haversineDistance(coords1: { lat: number; lon: number }, coords2: { lat
   return R * c;
 }
 
-// Helper to convert custom time string ("08:15") to Unix timestamp seconds for Google Maps Distance Matrix API
-function getDepartureTimestampSeconds(timeStr?: string): number {
+// Helper to convert custom time string ("08:15") and day type ("weekday" vs "weekend") to Unix timestamp seconds for Google Maps Distance Matrix API
+function getDepartureTimestampSeconds(timeStr?: string, dayType?: string): number {
   const now = new Date();
   if (!timeStr) return Math.floor(now.getTime() / 1000);
 
@@ -77,16 +77,22 @@ function getDepartureTimestampSeconds(timeStr?: string): number {
 
   const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), targetHour, targetMin, 0);
 
-  if (targetDate.getTime() < now.getTime()) {
-    targetDate.setDate(targetDate.getDate() + 1);
-  }
+  const isWeekendRequested = dayType === 'weekend';
 
-  // Ensure it's a weekday for realistic traffic
-  const day = targetDate.getDay();
-  if (day === 6) {
-    targetDate.setDate(targetDate.getDate() + 2);
-  } else if (day === 0) {
-    targetDate.setDate(targetDate.getDate() + 1);
+  if (isWeekendRequested) {
+    // Advance targetDate to Saturday if not already weekend
+    while (targetDate.getDay() !== 6 && targetDate.getDay() !== 0) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+  } else {
+    // Weekday requested (Segunda a Sexta): Ensure targetDate is a weekday (Wednesday)
+    if (targetDate.getTime() < now.getTime()) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+    // Force target to a weekday (Monday-Friday) for real peak traffic
+    while (targetDate.getDay() === 6 || targetDate.getDay() === 0) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
   }
 
   return Math.floor(targetDate.getTime() / 1000);
@@ -97,13 +103,14 @@ async function getGoogleDistanceMatrix(
   origin: string,
   destination: string,
   departureTime?: string,
+  dayType?: string,
   apiKey?: string
 ): Promise<number | null> {
   const key = apiKey || process.env.GOOGLE_MAPS_API_KEY;
   if (!key || !key.trim()) return null;
 
   try {
-    const depTimeSec = getDepartureTimestampSeconds(departureTime);
+    const depTimeSec = getDepartureTimestampSeconds(departureTime, dayType);
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(
       origin
     )}&destinations=${encodeURIComponent(destination)}&departure_time=${depTimeSec}&traffic_model=best_guess&language=pt-BR&key=${key.trim()}`;
@@ -124,8 +131,10 @@ async function getGoogleDistanceMatrix(
   return null;
 }
 
-// Helper to calculate traffic factor based on departure time
-function getTrafficFactor(departureTime?: string): number {
+// Helper to calculate traffic factor based on departure time and day type
+function getTrafficFactor(departureTime?: string, dayType?: string): number {
+  if (dayType === 'weekend') return 1.0; // Weekend is smooth/empty
+
   if (!departureTime) return 1.35; // Default peak traffic
   const [hourStr, minStr] = departureTime.split(':');
   const hour = parseInt(hourStr || '8', 10);
@@ -153,8 +162,8 @@ function getTrafficFactor(departureTime?: string): number {
 }
 
 // Estimate transit/driving time in minutes for Greater SP area based on distance and departure time
-function estimateCommuteMinutes(distanceKm: number, departureTime?: string): number {
-  const trafficFactor = getTrafficFactor(departureTime);
+function estimateCommuteMinutes(distanceKm: number, departureTime?: string, dayType?: string): number {
+  const trafficFactor = getTrafficFactor(departureTime, dayType);
   let baseMinutes = distanceKm * 2.0;
   if (distanceKm <= 1) baseMinutes = 7;
   else if (distanceKm <= 3) baseMinutes = 11;
@@ -173,9 +182,11 @@ export async function POST(req: NextRequest) {
       saymonAddress1,
       saymonAddress2,
       saymonTime,
+      saymonDay,
       kellyAddress1,
       kellyAddress2,
       kellyTime,
+      kellyDay,
       saymonWork,
       kellyWork,
       googleApiKey,
@@ -197,10 +208,10 @@ export async function POST(req: NextRequest) {
       let gKellyMin: number | null = null;
 
       if (addrSaymon1) {
-        gSaymonMin = await getGoogleDistanceMatrix(propertyAddress, addrSaymon1, saymonTime, activeGoogleKey);
+        gSaymonMin = await getGoogleDistanceMatrix(propertyAddress, addrSaymon1, saymonTime, saymonDay, activeGoogleKey);
       }
       if (addrKelly1) {
-        gKellyMin = await getGoogleDistanceMatrix(propertyAddress, addrKelly1, kellyTime, activeGoogleKey);
+        gKellyMin = await getGoogleDistanceMatrix(propertyAddress, addrKelly1, kellyTime, kellyDay, activeGoogleKey);
       }
 
       if (gSaymonMin !== null || gKellyMin !== null) {
@@ -227,25 +238,25 @@ export async function POST(req: NextRequest) {
     let tempoKellyMinutos = 30;
 
     if (propCoords) {
-      // Calculate best commute time for Saymon from up to 2 addresses with departure time
+      // Calculate best commute time for Saymon from up to 2 addresses with departure time and day
       const timesSaymon: number[] = [];
       if (coordsSaymon1) {
-        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon1), saymonTime));
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon1), saymonTime, saymonDay));
       }
       if (coordsSaymon2) {
-        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon2), saymonTime));
+        timesSaymon.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsSaymon2), saymonTime, saymonDay));
       }
       if (timesSaymon.length > 0) {
         tempoSaymonMinutos = Math.min(...timesSaymon);
       }
 
-      // Calculate best commute time for Kelly from up to 2 addresses with departure time
+      // Calculate best commute time for Kelly from up to 2 addresses with departure time and day
       const timesKelly: number[] = [];
       if (coordsKelly1) {
-        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly1), kellyTime));
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly1), kellyTime, kellyDay));
       }
       if (coordsKelly2) {
-        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly2), kellyTime));
+        timesKelly.push(estimateCommuteMinutes(haversineDistance(propCoords, coordsKelly2), kellyTime, kellyDay));
       }
       if (timesKelly.length > 0) {
         tempoKellyMinutos = Math.min(...timesKelly);
