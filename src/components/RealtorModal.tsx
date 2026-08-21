@@ -135,7 +135,7 @@ export function RealtorModal({ open, onOpenChange, onSubmitSuggestion, existingP
 
   // Validation Criteria Checks against Saymon's Ideal Preferences
   const totalCost = extractedData
-    ? extractedData.valorAluguel + extractedData.valorCondominio + extractedData.valorIptu
+    ? extractedData.valorAluguel + extractedData.valorCondominio + extractedData.valorIptu + (extractedData.valorSeguroIncendio || 0)
     : 0;
 
   const isPriceOk = totalCost <= 5000;

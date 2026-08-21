@@ -206,7 +206,7 @@ export default function CorretorPortalPage() {
 
 
   const totalCost = extractedData
-    ? extractedData.valorAluguel + extractedData.valorCondominio + extractedData.valorIptu
+    ? extractedData.valorAluguel + extractedData.valorCondominio + extractedData.valorIptu + (extractedData.valorSeguroIncendio || 0)
     : 0;
 
   const isPriceOk = totalCost <= 5000;
