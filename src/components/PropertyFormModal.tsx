@@ -306,10 +306,11 @@ export function PropertyFormModal({
   };
 
   // Watch for live total calculation
-  const watchedAluguel = Number(watch('valorAluguel')) || 0;
-  const watchedCondominio = Number(watch('valorCondominio')) || 0;
-  const watchedIptu = Number(watch('valorIptu')) || 0;
-  const watchedArea = Number(watch('areaUtil')) || 1;
+  const watchedAluguel = Number(String(watch('valorAluguel') || '').replace(',', '.')) || 0;
+  const watchedCondominio = Number(String(watch('valorCondominio') || '').replace(',', '.')) || 0;
+  const watchedIptu = Number(String(watch('valorIptu') || '').replace(',', '.')) || 0;
+  const watchedSeguro = Number(String(watch('valorSeguroIncendio') || '').replace(',', '.')) || 0;
+  const watchedArea = Number(String(watch('areaUtil') || '').replace(',', '.')) || 1;
   const watchedDiferenciais = watch('diferenciais') || [];
   const watchedNotaSaymon = Number(watch('notaSaymon')) || 5;
   const watchedNotaKelly = Number(watch('notaKelly')) || 5;
@@ -318,7 +319,8 @@ export function PropertyFormModal({
     watchedAluguel,
     watchedCondominio,
     watchedIptu,
-    watchedArea
+    watchedArea,
+    watchedSeguro
   );
 
   const coupleMedia = Number(((watchedNotaSaymon + watchedNotaKelly) / 2).toFixed(1));
@@ -342,10 +344,11 @@ export function PropertyFormModal({
       tempoSaymonMinutos: Number(data.tempoSaymonMinutos) || 25,
       tempoKellyMinutos: Number(data.tempoKellyMinutos) || 30,
       tempoAteTrabalhoMinutos: Number(data.tempoAteTrabalhoMinutos) || 25,
-      valorAluguel: Number(data.valorAluguel) || 0,
-      valorCondominio: Number(data.valorCondominio) || 0,
-      valorIptu: Number(data.valorIptu) || 0,
-      areaUtil: Number(data.areaUtil) || 1,
+      valorAluguel: Number(String(data.valorAluguel || 0).replace(',', '.')) || 0,
+      valorCondominio: Number(String(data.valorCondominio || 0).replace(',', '.')) || 0,
+      valorIptu: Number(String(data.valorIptu || 0).replace(',', '.')) || 0,
+      valorSeguroIncendio: Number(String(data.valorSeguroIncendio || 0).replace(',', '.')) || 0,
+      areaUtil: Number(String(data.areaUtil || 1).replace(',', '.')) || 1,
       dormitorios: Number(data.dormitorios) || 0,
       suites: Number(data.suites) || 0,
       banheiros: Number(data.banheiros) || 1,

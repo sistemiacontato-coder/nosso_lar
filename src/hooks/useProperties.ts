@@ -100,7 +100,8 @@ export function useProperties() {
         values.valorAluguel,
         values.valorCondominio,
         values.valorIptu,
-        values.areaUtil
+        values.areaUtil,
+        values.valorSeguroIncendio
       );
 
       const nSaymon = Number(values.notaSaymon || 0);
@@ -117,6 +118,7 @@ export function useProperties() {
         valorAluguel: Number(values.valorAluguel),
         valorCondominio: Number(values.valorCondominio || 0),
         valorIptu: Number(values.valorIptu || 0),
+        valorSeguroIncendio: Number(values.valorSeguroIncendio || 0),
         custoTotalMensal: custoTotal,
         dormitorios: Number(values.dormitorios),
         suites: Number(values.suites || 0),
@@ -227,7 +229,8 @@ export function useProperties() {
             values.valorAluguel,
             values.valorCondominio,
             values.valorIptu,
-            values.areaUtil
+            values.areaUtil,
+            values.valorSeguroIncendio
           );
 
           const nSaymon = Number(values.notaSaymon || item.notaSaymon);
@@ -244,6 +247,7 @@ export function useProperties() {
             valorAluguel: Number(values.valorAluguel),
             valorCondominio: Number(values.valorCondominio || 0),
             valorIptu: Number(values.valorIptu || 0),
+            valorSeguroIncendio: Number(values.valorSeguroIncendio || 0),
             custoTotalMensal: custoTotal,
             dormitorios: Number(values.dormitorios),
             suites: Number(values.suites || 0),
@@ -287,7 +291,8 @@ export function useProperties() {
             updated.valorAluguel,
             updated.valorCondominio,
             updated.valorIptu,
-            updated.areaUtil
+            updated.areaUtil,
+            updated.valorSeguroIncendio
           );
 
           const media = Number(((updated.notaSaymon + updated.notaKelly) / 2).toFixed(1));
