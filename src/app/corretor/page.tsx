@@ -109,6 +109,7 @@ export default function CorretorPortalPage() {
         valorAluguel: d.valorAluguel || 3800,
         valorCondominio: d.valorCondominio || 800,
         valorIptu: d.valorIptu || 200,
+        valorSeguroIncendio: d.valorSeguroIncendio || 0,
         dormitorios: d.dormitorios || 3,
         suites: d.suites || 1,
         banheiros: d.banheiros || 2,

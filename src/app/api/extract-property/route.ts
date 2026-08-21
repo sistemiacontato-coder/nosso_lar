@@ -367,6 +367,15 @@ export async function POST(req: NextRequest) {
       if (iptuMatch) iptu = parseMoney(iptuMatch[1]);
     }
 
+    let seguroIncendio = 0;
+    const seguroMatch = html.match(/parcela\s*seguro\s*inc[êe]ndio[\s\S]{0,100}?R\$\s*([\d\.,]+)/i) ||
+                        html.match(/seguro\s*inc[êe]ndio[\s\S]{0,100}?R\$\s*([\d\.,]+)/i);
+    if (seguroMatch) {
+      const val = parseMoney(seguroMatch[1]);
+      if (val > 150) seguroIncendio = Math.round(val / 12);
+      else seguroIncendio = val;
+    }
+
     // 5. Extrair Cômodos & Área Útil
     let quartos = 3;
     let suites = 1;
@@ -512,6 +521,7 @@ export async function POST(req: NextRequest) {
       valorAluguel: aluguel,       // Real value or 0 (no fake defaults)
       valorCondominio: condominio, // Real value or 0
       valorIptu: iptu,             // Real value or 0
+      valorSeguroIncendio: seguroIncendio,
       dormitorios: quartos,
       suites: suites,
       banheiros: banheiros,

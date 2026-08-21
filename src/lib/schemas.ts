@@ -27,6 +27,12 @@ export const propertyFormSchema = z.object({
     .number({ invalid_type_error: 'Informe um valor numérico' })
     .min(0, 'O IPTU não pode ser negativo')
     .default(0),
+  valorSeguroIncendio: z.coerce
+    .number({ invalid_type_error: 'Informe um valor numérico' })
+    .min(0, 'O seguro incêndio não pode ser negativo')
+    .optional()
+    .or(z.literal(''))
+    .default(0),
   dormitorios: z.coerce
     .number({ invalid_type_error: 'Informe a quantidade' })
     .min(0, 'Mínimo 0')

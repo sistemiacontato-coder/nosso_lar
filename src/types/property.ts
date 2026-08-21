@@ -19,7 +19,8 @@ export interface Property {
   valorAluguel: number;
   valorCondominio: number;
   valorIptu: number;
-  custoTotalMensal: number; // aluguel + condomínio + iptu
+  valorSeguroIncendio?: number;
+  custoTotalMensal: number; // aluguel + condomínio + iptu + seguro incêndio
   dormitorios: number;
   suites: number;
   banheiros: number;

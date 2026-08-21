@@ -51,6 +51,7 @@ const emptyDefaultValues: PropertyFormValues = {
   valorAluguel: '' as unknown as number,
   valorCondominio: '' as unknown as number,
   valorIptu: '' as unknown as number,
+  valorSeguroIncendio: '' as unknown as number,
   dormitorios: '' as unknown as number,
   suites: '' as unknown as number,
   banheiros: '' as unknown as number,
@@ -125,6 +126,7 @@ export function PropertyFormModal({
           valorAluguel: initialData.valorAluguel,
           valorCondominio: initialData.valorCondominio,
           valorIptu: initialData.valorIptu,
+          valorSeguroIncendio: initialData.valorSeguroIncendio || 0,
           dormitorios: initialData.dormitorios,
           suites: initialData.suites,
           banheiros: initialData.banheiros,
@@ -204,6 +206,7 @@ export function PropertyFormModal({
       if (data.valorAluguel) setValue('valorAluguel', data.valorAluguel, { shouldValidate: true });
       if (data.valorCondominio) setValue('valorCondominio', data.valorCondominio, { shouldValidate: true });
       if (data.valorIptu) setValue('valorIptu', data.valorIptu, { shouldValidate: true });
+      if (data.valorSeguroIncendio) setValue('valorSeguroIncendio', data.valorSeguroIncendio, { shouldValidate: true });
       if (data.dormitorios) setValue('dormitorios', data.dormitorios, { shouldValidate: true });
       if (data.suites) setValue('suites', data.suites, { shouldValidate: true });
       if (data.banheiros) setValue('banheiros', data.banheiros, { shouldValidate: true });
@@ -713,7 +716,7 @@ export function PropertyFormModal({
               <DollarSign className="h-3.5 w-3.5" /> 2. Composição Financeira Mensal (R$)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               {/* Valor Aluguel */}
               <div className="space-y-1.5">
                 <Label htmlFor="valorAluguel">
@@ -752,6 +755,18 @@ export function PropertyFormModal({
                   step="any"
                   placeholder="Ex: 210"
                   {...register('valorIptu')}
+                />
+              </div>
+
+              {/* Seguro Incêndio */}
+              <div className="space-y-1.5">
+                <Label htmlFor="valorSeguroIncendio">Seguro Incêndio (R$)</Label>
+                <Input
+                  id="valorSeguroIncendio"
+                  type="number"
+                  step="any"
+                  placeholder="Ex: 34"
+                  {...register('valorSeguroIncendio')}
                 />
               </div>
             </div>
