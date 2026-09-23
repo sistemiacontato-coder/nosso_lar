@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Property, PropertyFilters, PropertySortKey, PropertyStatus, CommuteAnchors } from '@/types/property';
 import { INITIAL_PROPERTIES } from '@/lib/initialData';
 import { useLocalStorage } from './useLocalStorage';
@@ -11,37 +11,115 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const STORAGE_KEY = 'aluga_compare_couple_saymon_kelly_v9';
 
+// JSON com chaves ordenadas: compara imóveis sem depender da ordem das propriedades
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+      : v
+  );
+}
+
 export function useProperties() {
   const [properties, setProperties, isLoaded] = useLocalStorage<Property[]>(
     STORAGE_KEY,
     INITIAL_PROPERTIES
   );
 
+  // Última versão conhecida na nuvem (id → JSON estável). null = nuvem ainda não carregada.
+  const cloudSnapshotRef = useRef<Map<string, string> | null>(null);
+  const [cloudReady, setCloudReady] = useState(false);
+
   // Busca sincronização em nuvem ao carregar a página
   useEffect(() => {
+    if (!isLoaded) return;
     fetch('/api/sync-properties')
       .then((res) => res.json())
       .then((json) => {
-        if (json.success) {
-          if (Array.isArray(json.properties) && json.properties.length > 0) {
-            setProperties((prev) => {
-              const map = new Map<string, Property>();
-              json.properties.forEach((p: Property) => map.set(p.id, p));
-              prev.forEach((p: Property) => {
-                if (!map.has(p.id)) map.set(p.id, p);
-              });
-              return Array.from(map.values());
-            });
-          }
-          if (json.anchors) {
-            try {
-              localStorage.setItem('nosso_lar_commute_anchors_v3', JSON.stringify(json.anchors));
-            } catch (e) {}
-          }
+        if (!json.success) {
+          console.error('Falha ao carregar imóveis da nuvem:', json.error);
+          return;
         }
+        const cloudProps: Property[] = Array.isArray(json.properties) ? json.properties : [];
+        cloudSnapshotRef.current = new Map(cloudProps.map((p) => [p.id, stableStringify(p)]));
+        if (cloudProps.length > 0) {
+          setProperties((prev) => {
+            const map = new Map<string, Property>();
+            cloudProps.forEach((p) => map.set(p.id, p));
+            prev.forEach((p: Property) => {
+              if (!map.has(p.id)) map.set(p.id, p);
+            });
+            return Array.from(map.values());
+          });
+        }
+        if (json.anchors) {
+          try {
+            localStorage.setItem('nosso_lar_commute_anchors_v3', JSON.stringify(json.anchors));
+          } catch (e) {}
+        }
+        setCloudReady(true);
       })
-      .catch(() => {});
-  }, [setProperties]);
+      .catch((err) => console.error('Falha ao carregar imóveis da nuvem:', err));
+  }, [isLoaded, setProperties]);
+
+  // Envia para a nuvem tudo o que difere do último snapshot (novos, editados e excluídos)
+  useEffect(() => {
+    if (!cloudReady) return;
+    const timer = setTimeout(async () => {
+      const snapshot = cloudSnapshotRef.current;
+      if (!snapshot) return;
+
+      const changed = properties.filter((p) => snapshot.get(p.id) !== stableStringify(p));
+      const currentIds = new Set(properties.map((p) => p.id));
+      const removedIds = Array.from(snapshot.keys()).filter((id) => !currentIds.has(id));
+
+      if (changed.length > 0) {
+        try {
+          const res = await fetch('/api/sync-properties', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ properties: changed }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.error);
+          changed.forEach((p) => {
+            const existed = snapshot.has(p.id);
+            snapshot.set(p.id, stableStringify(p));
+            supabase?.channel('nosso_lar_couple_live_channel').send({
+              type: 'broadcast',
+              event: existed ? 'property_updated' : 'property_added',
+              payload: p,
+            }).catch(() => {});
+          });
+        } catch (err) {
+          console.error('Falha ao salvar imóveis na nuvem:', err);
+        }
+      }
+
+      if (removedIds.length > 0) {
+        try {
+          const res = await fetch('/api/sync-properties', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: removedIds }),
+          });
+          const json = await res.json();
+          if (!json.success) throw new Error(json.error);
+          removedIds.forEach((id) => {
+            snapshot.delete(id);
+            supabase?.channel('nosso_lar_couple_live_channel').send({
+              type: 'broadcast',
+              event: 'property_deleted',
+              payload: { id },
+            }).catch(() => {});
+          });
+        } catch (err) {
+          console.error('Falha ao excluir imóveis na nuvem:', err);
+        }
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [properties, cloudReady]);
 
   // ─── Supabase Realtime: Sincronia de alterções ao vivo entre Saymon e Kelly ───
   useEffect(() => {
@@ -53,13 +131,15 @@ export function useProperties() {
       .on('broadcast', { event: 'property_updated' }, (payload: any) => {
         const updatedProp: Property = payload.payload;
         if (!updatedProp?.id) return;
+        cloudSnapshotRef.current?.set(updatedProp.id, stableStringify(updatedProp));
         setProperties((prev) =>
-          prev.map((p) => (p.id === updatedProp.id ? { ...p, ...updatedProp } : p))
+          prev.map((p) => (p.id === updatedProp.id ? updatedProp : p))
         );
       })
       .on('broadcast', { event: 'property_added' }, (payload: any) => {
         const newProp: Property = payload.payload;
         if (!newProp?.id) return;
+        cloudSnapshotRef.current?.set(newProp.id, stableStringify(newProp));
         setProperties((prev) => {
           if (prev.some((p) => p.id === newProp.id)) return prev;
           return [newProp, ...prev];
@@ -68,6 +148,7 @@ export function useProperties() {
       .on('broadcast', { event: 'property_deleted' }, (payload: any) => {
         const id = payload.payload?.id;
         if (!id) return;
+        cloudSnapshotRef.current?.delete(id);
         setProperties((prev) => prev.filter((p) => p.id !== id));
       })
       .on('broadcast', { event: 'anchors_updated' }, (payload: any) => {
@@ -378,13 +459,6 @@ export function useProperties() {
         }).catch(() => {});
       }
 
-      if (finalUpdated) {
-        fetch('/api/sync-properties', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ property: finalUpdated }),
-        }).catch(() => {});
-      }
     },
     [setProperties]
   );
@@ -430,12 +504,6 @@ export function useProperties() {
           })
         ).then((updatedList) => {
           setProperties(updatedList);
-
-          fetch('/api/sync-properties', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ properties: updatedList }),
-          }).catch(() => {});
 
           if (isSupabaseConfigured && supabase) {
             supabase.channel('nosso_lar_couple_live_channel').send({
